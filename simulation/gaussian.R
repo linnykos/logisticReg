@@ -2,8 +2,9 @@ rm(list=ls())
 library(simulation)
 library(logisticReg)
 
-paramMat <- as.matrix(expand.grid(seq(0, 0.6, length.out = 50),
-                                  seq(0, 10, length.out = 50),
+grid_size <- 30
+paramMat <- as.matrix(expand.grid(seq(0, 0.6, length.out = grid_size),
+                                  seq(0, 10, length.out = grid_size),
                                   1000))
 colnames(paramMat) <- c("kappa", "gamma", "n")
 trials <- 50
