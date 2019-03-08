@@ -11,9 +11,10 @@ trials <- 50
 ################
 
 rule <- function(vec){
-  d <- max(round(vec["kappa"] * vec["n"]), 1)
-  X <- MASS::mvrnorm(n = vec["n"], rep(0, d), diag(d))
-  beta <- rep(sqrt(vec["gamma"])/sqrt(d), d)
+  n <- vec["n"]
+  d <- max(round(vec["kappa"] * n), 1)
+  X <- MASS::mvrnorm(n = n, rep(0, d), diag(d))
+  beta <- rep(vec["gamma"]/sqrt(d), d)
   y <- logisticReg::generate_y_from_x(X, beta_0 = 0, beta = beta)
 
   list(X = X, y = y)
