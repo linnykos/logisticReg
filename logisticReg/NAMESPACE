@@ -2,3 +2,4 @@
 
 export(existence)
 export(generate_y_from_x)
+export(margin)

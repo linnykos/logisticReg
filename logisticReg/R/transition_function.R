@@ -36,15 +36,16 @@ h_mle <- function(beta_0, gamma_0, n = 100000, tol = 1e-4, iter_max = 100){
   n <- length(y)
 
   if(is.na(t_1_init)){
-    fn <- function(t_1){
+    fn1 <- function(t_1){
       mean(pmax(t_0_init*y + t_1*v - z, 0)^2)
     }
+    res <- stats::optim(0, fn = fn1, lower = -500, upper = 500, method = "Brent")
   } else {
-    fn <- function(t_0){
+    fn2 <- function(t_0){
       mean(pmax(t_0*y + t_1_init*v - z, 0)^2)
     }
+    res <- stats::optim(0, fn = fn2, lower = -500, upper = 500, method = "Brent")
   }
 
-  res <- stats::optim(0, fn = fn, lower = -500, upper = 500, method = "Brent")
   res$par
 }

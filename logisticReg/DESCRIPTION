@@ -11,7 +11,8 @@ LazyData: true
 Imports:
     clplite,
     glmnet,
-    MASS
+    MASS,
+    e1071
 Suggests:
     testthat
 RoxygenNote: 6.1.1

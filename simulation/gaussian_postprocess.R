@@ -1,10 +1,5 @@
 rm(list=ls())
-load("../results/gaussian_tmp.RData")
-
-paramMat <- as.matrix(expand.grid(seq(0, 0.6, length.out = 50),
-                                  seq(0, 10, length.out = 50),
-                                  1000))
-colnames(paramMat) <- c("kappa", "gamma", "n")
+load("../results/gaussian.RData")
 
 # large numbers = likely to exist
 ratio_vec <- sapply(res, function(x){
@@ -13,17 +8,21 @@ ratio_vec <- sapply(res, function(x){
   sum(tmp)/length(tmp)
 })
 
-kappa_vec <- seq(0, 0.6, length.out = 50)
-gamma_vec <- seq(0, 10, length.out = 50)
-ratio_mat <- matrix(ratio_vec, ncol = 50)
+kappa_vec <- seq(0, 0.6, length.out = grid_size)
+gamma_vec <- seq(0, 10, length.out = grid_size)
+ratio_mat <- matrix(ratio_vec, ncol = grid_size)
 colnames(ratio_mat) <- gamma_vec
 rownames(ratio_mat) <- kappa_vec
 
+vec = sapply(seq(0, 10, length.out = 100), function(x){h_mle(0, x)})
+
 #prob of 0 = black
-image(x = seq(0, 0.6, length.out = 50), y = seq(0, 10, length.out = 50),
+png("../figures/gaussian_simulation.png",
+    height = 1500, width = 1500, res = 300, units = "px")
+image(x = kappa_vec, y = gamma_vec,
       z = ratio_mat, breaks = seq(0, 1, length.out = 50),
       col = gray.colors(49), #col = colorRampPalette(c("black", "white"))(49),
       asp = max(kappa_vec)/max(gamma_vec), xlab = "Kappa", ylab = "Gamma")
 
-vec = sapply(seq(0, sqrt(10), length.out = 100), function(x){h_mle(0, x)})
 points(vec, seq(0, 10, length.out = 100), col = "red", pch = 16)
+graphics.off()
