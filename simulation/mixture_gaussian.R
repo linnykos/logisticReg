@@ -37,13 +37,13 @@ rule <- function(vec){
 
 criterion <- function(dat, vec, y){
   bool <- logisticReg::existence(dat$X, dat$y)
-  if(!bool){
-    margin <- logisticReg::margin(dat$X, dat$y)
-  } else {
-    margin <- NA
-  }
+  # if(!bool){
+  #   margin <- logisticReg::margin(dat$X, dat$y)
+  # } else {
+  #   margin <- NA
+  # }
 
-  list(bool = bool, margin = margin)
+  list(bool = bool) #, margin = margin)
 }
 
 # set.seed(1); criterion(rule(paramMat[1,]), paramMat[1,], 1)
