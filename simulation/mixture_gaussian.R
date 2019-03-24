@@ -26,11 +26,8 @@ rule <- function(vec){
   pop_covariance <- (.5*diag(d) + .5*diag(d)) + (.5*(mean_vec1 - grand_mean)%*%t(mean_vec1 - grand_mean) +
                                                    .5*(mean_vec2 - grand_mean)%*%t(mean_vec2 - grand_mean))
 
-  # load all the signal on the first coordinate
-  beta <- rep(vec["gamma"]/sqrt(d), d)
-
-  # OH ... wait. Now I see why non-Gaussian is hard...
-
+  # load all the signal on all but the first coordinate
+  beta <- c(0, sqrt(2)*vec["gamma"]/sqrt(d), rep(vec["gamma"]/sqrt(d), d-2))
 
   y <- logisticReg::generate_y_from_x(X, beta_0 = 0, beta = beta)
 
@@ -38,12 +35,19 @@ rule <- function(vec){
 }
 
 criterion <- function(dat, vec, y){
-  logisticReg::existence(dat$X, dat$y)
+  bool <- logisticReg::existence(dat$X, dat$y)
+  if(!bool){
+    margin <- logisticReg::margin(dat$X, dat$y)
+  } else {
+    margin <- NA
+  }
+
+  list(bool = bool, margin = margin)
 }
 
 # set.seed(1); criterion(rule(paramMat[1,]), paramMat[1,], 1)
 # set.seed(1); criterion(rule(paramMat[2,]), paramMat[2,], 1)
-# set.seed(1); criterion(rule(paramMat[2500,]), paramMat[2500,], 1)
+# set.seed(1); criterion(rule(paramMat[900,]), paramMat[900,], 1)
 
 #################
 
@@ -54,3 +58,7 @@ res <- simulation::simulation_generator(rule = rule, criterion = criterion,
                                         verbose = T)
 
 save.image("../results/mixture_gaussian.RData")
+
+
+## res <- res[which(sapply(res, length) > 0)]; zz <- sapply(res, function(i){length(which(sapply(i, length) == 1))}); names(zz) <- NULL; zz
+

@@ -45,3 +45,7 @@ res <- simulation::simulation_generator(rule = rule, criterion = criterion,
                                         verbose = T)
 
 save.image("../results/gaussian.RData")
+
+
+## res <- res[which(sapply(res, length) > 0)]; zz <- sapply(res, function(i){length(which(sapply(i, length) == 1))}); names(zz) <- NULL; zz
+

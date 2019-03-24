@@ -19,6 +19,7 @@
 margin <- function(X, y, check = TRUE, tol = 1e-2){
   res <- e1071::svm(x = X, y = y, type = "C-classification", cost = 1000000000,
                     scale = FALSE, kernel = "linear", shrinking = FALSE)
+
   if(check) stopifnot(all(y %in% c(-1,1)))
 
   beta = rep(0, 2)
@@ -39,8 +40,8 @@ margin <- function(X, y, check = TRUE, tol = 1e-2){
       X[res$index[i],]%*%beta-y[res$index[i]]
     })
 
-    stopifnot((max(beta_0_vec1) - min(beta_0_vec1) < tol) |
-                (max(beta_0_vec2) - min(beta_0_vec2) < tol))
+    if((max(beta_0_vec1) - min(beta_0_vec1) > tol) &
+                (max(beta_0_vec2) - min(beta_0_vec2) > tol)) return(NA)
   }
 
   2/.l2norm(beta)
