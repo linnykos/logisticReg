@@ -13,11 +13,10 @@ trials <- 50
 
 rule <- function(vec){
   n <- vec["n"]
-  d <- max(round(vec["kappa"] * n), 1)
+  d <- max(round(vec["kappa"] * n), 2)
   idx <- sample(c(1,2), n, replace = T)
 
-  mean_vec1 <- c(-2, rep(0, d-1))
-  mean_vec2 <- c(2, rep(0, d-1))
+  mean_vec1 <- c(-2, rep(0, d-1)); mean_vec2 <- c(2, rep(0, d-1))
 
   X <- rbind(MASS::mvrnorm(n = length(which(idx == 1)), mean_vec1, diag(d)),
              MASS::mvrnorm(n = length(which(idx == 2)), mean_vec2, diag(d)))
@@ -28,6 +27,8 @@ rule <- function(vec){
 
   # load all the signal on all but the first coordinate
   beta <- c(0, sqrt(2)*vec["gamma"]/sqrt(d), rep(vec["gamma"]/sqrt(d), d-2))
+
+  #stopifnot(abs(t(beta)%*%pop_covariance%*%beta - vec["gamma"]^2) < 1e-6)
 
   y <- logisticReg::generate_y_from_x(X, beta_0 = 0, beta = beta)
 
