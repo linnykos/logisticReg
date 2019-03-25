@@ -27,7 +27,8 @@ rule <- function(vec){
 
   # load all the signal on all but the first coordinate
   # beta <- c(0, sqrt(2)*vec["gamma"]/sqrt(d), rep(vec["gamma"]/sqrt(d), d-2))
-  beta <- c(vec["gamma"]/(sqrt(d)*sqrt(pop_covariance[1,1])), rep(vec["gamma"]/sqrt(d), d-1))
+  # beta <- c(vec["gamma"]/(sqrt(d)*sqrt(pop_covariance[1,1])), rep(vec["gamma"]/sqrt(d), d-1))
+  beta <- c(vec["gamma"]/sqrt(pop_covariance[1,1]), rep(0, d-1))
 
   #stopifnot(abs(t(beta)%*%pop_covariance%*%beta - vec["gamma"]^2) < 1e-6)
 
@@ -59,7 +60,7 @@ res <- simulation::simulation_generator(rule = rule, criterion = criterion,
                                         filepath = "../results/mixture_gaussian_tmp.RData",
                                         verbose = T)
 
-save.image("../results/mixture_gaussian_withfirst.RData")
+save.image("../results/mixture_gaussian_onlyfirst.RData")
 
 
 ## res <- res[which(sapply(res, length) > 0)]; zz <- sapply(res, function(i){length(which(sapply(i, length) == 1))}); names(zz) <- NULL; zz
