@@ -1,5 +1,5 @@
 rm(list=ls())
-load("../results/mixture_gaussian_withfirst.RData")
+load("../results/mixture_gaussian_onlyfirst.RData")
 
 # large numbers = likely to exist
 ratio_vec <- sapply(res, function(x){
@@ -18,7 +18,7 @@ rownames(ratio_mat) <- kappa_vec
 vec <- sapply(seq(0, 10, length.out = 100), function(x){h_mle(0, x)})
 
 #prob of 0 = black
-png("../figures/mixture_gaussian_simulation_withfirst.png",
+png("../figures/mixture_gaussian_simulation_onlyfirst.png",
     height = 1500, width = 1500, res = 300, units = "px")
 image(x = kappa_vec, y = gamma_vec,
       z = ratio_mat, breaks = seq(0, 1, length.out = 50),
