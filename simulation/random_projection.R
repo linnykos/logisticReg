@@ -16,14 +16,19 @@ rule <- function(vec){
   d <- max(round(vec["kappa"] * n), 1)
   sigma <- matrix(0.5, d, d)
   diag(sigma) <- 1
-  X <- MASS::mvrnorm(n = n, rep(0, d), sigma)
+  X <- matrix(stats::rnorm(n*d), ncol = d)
+  X <- t(apply(X, 1, function(x){
+    x/logisticReg:::.l2norm(x)
+  }))
 
-  # do a nonparanomral transformation
-  X <- apply(X, 2, function(x){
-    sign(x)*abs(x)^0.5
-  })
+  # X <- MASS::mvrnorm(n = n, rep(0, d), sigma)
+  #
+  # # do a nonparanomral transformation
+  # X <- apply(X, 2, function(x){
+  #   sign(x)*abs(x)^0.5
+  # })
 
-  list(X = X, y = y)
+  list(X = X)
 }
 
 
@@ -34,7 +39,7 @@ criterion <- function(dat, vec, y){
 
   quant_vec <- logisticReg::gaussian_check(Z, prob_vec = c(0.5, 1))
 
-  tmp <-  as.matrix(dist(dat$Z))/as.matrix(dist(dat$X))
+  tmp <-  as.matrix(dist(Z))/as.matrix(dist(dat$X))
   diag(tmp) <- 1
   distortion_vec <- range(tmp)
 
@@ -44,6 +49,7 @@ criterion <- function(dat, vec, y){
 # set.seed(1); criterion(rule(paramMat[1,]), paramMat[1,], 1)
 # set.seed(1); criterion(rule(paramMat[2,]), paramMat[2,], 1)
 # set.seed(1); criterion(rule(paramMat[900,]), paramMat[900,], 1)
+# set.seed(1); criterion(rule(paramMat[871,]), paramMat[871,], 1)
 
 #################
 
