@@ -53,11 +53,7 @@
   diag(n)[include_idx,,drop = F]
 }
 
-#nullspace is the complement of the rowspace
 #assumes no linearity in the columns
 .nullspace <- function(mat){
-  if(nrow(mat) == 0) return(diag(ncol(mat)))
-  # if(ncol(mat) <= nrow(mat)) return(matrix(NA, nrow = ncol(mat), ncol = 0))
-
-  .orthogonal_basis(t(mat))
+  MASS::Null(t(mat))
 }

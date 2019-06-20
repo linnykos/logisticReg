@@ -22,7 +22,6 @@
   }
   null_intersect <- apply(null_intersect, 2, function(x){x/.l2norm(x)})
   projection_space <- .orthogonal_basis(d_bnota %*% null_intersect)
-  stopifnot(nrow(projection_space) <= ncol(projection_space))
 
   # compute P_{[D_{B \backslash A}(null(X) \cap null(D_{-B}))]^c}
   term1 <- .projection_matrix(projection_space)
