@@ -117,8 +117,7 @@
 }
 
 .distance_point_to_plane <- function(point, plane){
-  stopifnot(length(point) == length(plane$A))
-  stopifnot(nrow(plane$A) == 1)
+  stopifnot(length(point) == ncol(plane$A))
 
   x <- .point_on_plane(plane)
   .l2norm(plane$A%*%(point - x))/.l2norm(plane$A)

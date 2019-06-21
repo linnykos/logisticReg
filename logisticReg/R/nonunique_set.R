@@ -4,7 +4,7 @@
 
   powerset <- .powerset(1:d)[-1] # determine b_idx
 
-  bool_vec <- unlist(lapply(powerset, function(b_idx){
+  all_dist_vec <- unlist(lapply(powerset, function(b_idx){
     len <- length(b_idx)
     powerset_inner <- .powerset(1:len) # determine s_vec OR a_idx
     k <- length(powerset_inner)
@@ -36,7 +36,7 @@
     dist_vec
   }))
 
-  min(dist_vec, na.rm = T)
+  min(all_dist_vec, na.rm = T)
 }
 
 .construct_mab <- function(dat, a_idx, b_idx, tol = 1e-6){
