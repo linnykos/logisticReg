@@ -1,10 +1,4 @@
-.plane <- function(basis, offset = rep(0, nrow(basis))){
-  stopifnot(length(offset) == nrow(basis))
 
-  if(ncol(basis) > 0) basis <- apply(basis, 2, function(x){x/.l2norm(x)})
-
-  structure(list(basis = basis, offset = offset), class = "plane")
-}
 
 .projection_euclidean <- function(point, plane){
   stopifnot(class(plane) == "plane")
