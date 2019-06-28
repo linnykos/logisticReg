@@ -52,7 +52,7 @@ fit_list <- lapply(1:nrow(y_mat), function(i){
 
 # convert to signs
 idx <- which(sapply(fit_list, function(x){all(is.na(x))}))
-if(length(idx) > 0){
+if(length(idx) > 0){w
   fit_list <- fit_list[-idx]
   y_mat <- y_mat[-idx,]
 }
