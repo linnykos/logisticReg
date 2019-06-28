@@ -1,5 +1,6 @@
 .distance_point_to_set <- function(dat, y, lambda){
   stopifnot(length(y) == nrow(dat))
+  y <- as.numeric(y)
   n <- nrow(dat); d <- ncol(dat)
 
   powerset <- .powerset(1:d)[-1] # determine b_idx
