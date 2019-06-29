@@ -36,18 +36,18 @@
   .orthogonalize(rand_mat)
 }
 
-.is_vector_in_basis <- function(vec, mat, tol = 1e-16){
-  stopifnot(ncol(mat) <= nrow(mat), length(vec) == nrow(mat))
-  d <- ncol(mat)
-
-  complement_mat <- .orthogonal_basis(mat)
-  full_mat <- cbind(mat, complement_mat)
-
-  sol <- solve(full_mat, vec)
-  sol <- sol/.l2norm(sol)
-
-  sum(abs(sol[-c(1:d)])) <= tol
-}
+# .is_vector_in_basis <- function(vec, mat, tol = 1e-16){
+#   stopifnot(ncol(mat) <= nrow(mat), length(vec) == nrow(mat))
+#   d <- ncol(mat)
+#
+#   complement_mat <- .orthogonal_basis(mat)
+#   full_mat <- cbind(mat, complement_mat)
+#
+#   sol <- solve(full_mat, vec)
+#   sol <- sol/.l2norm(sol)
+#
+#   sum(abs(sol[-c(1:d)])) <= tol
+# }
 
 .diagonal_matrix <- function(n, include_idx = c(1:n)){
   diag(n)[include_idx,,drop = F]
@@ -71,7 +71,7 @@
 
   if(ncol(basis) > 0) {
     basis <- apply(basis, 2, function(x){x/.l2norm(x)})
-    A <- t(.orthogonalize(basis)); b <- A %*% offset
+    A <- t(.orthogonal_basis(basis)); b <- A %*% offset
   } else {
     A <- diag(nrow(basis)); b <- offset
   }

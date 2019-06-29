@@ -107,5 +107,87 @@ test_that(".orthogonal_basis returns orthogonal vectors", {
   expect_true(sum(all(t(res)%*%res - diag(4))) <= 1e-6)
 })
 
+##################################
+
+## .nullspace is correct
+
+test_that(".nullspace works", {
+  set.seed(10)
+  mat <- matrix(rnorm(60), 6, 10)
+  res <- .nullspace(mat)
+
+  expect_true(all(dim(res) == c(10,4)))
+})
+
+test_that(".nullspace returns normed vectors by convention", {
+  set.seed(30)
+  mat <- matrix(rnorm(60), 6, 10)
+  res <- .nullspace(mat)
+
+  expect_true(all(apply(res, 2, .l2norm)) == 1)
+})
+
+test_that(".orthogonal_basis returns orthogonal vectors", {
+  set.seed(50)
+  mat <- matrix(rnorm(60), 6, 10)
+  res <- .nullspace(mat)
+
+  expect_true(sum(all(t(res)%*%res - diag(4))) <= 1e-6)
+})
+
+####################
+
+## .plane is correct
+
+test_that(".plane works", {
+  set.seed(10)
+
+  basis <- matrix(rnorm(60), 10, 6)
+  offset <- rep(0, 10)
+  res <- .plane(basis, offset)
+
+  expect_true(class(res) == "plane")
+  expect_true(all(sort(names(res)) == sort(c("basis", "offset", "A", "b"))))
+  expect_true(all(dim(res$basis) == c(10,6)))
+  expect_true(length(res$offset) == 10)
+  expect_true(all(dim(res$A) == c(4,10)))
+  expect_true(length(res$b) == 4)
+})
+
+test_that(".plane has a correct representation from basis to A", {
+  trials <- 50
+
+  bool_vec <- sapply(1:trials, function(i){
+    set.seed(10*i)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+
+    new_vec <- as.numeric(basis %*% rnorm(6)) + offset
+    sum(abs(plane$A %*% new_vec - plane$b)) <= 1e-6
+  })
+
+  expect_true(all(bool_vec))
+})
+
+test_that(".plane has a correct representation from A to basis", {
+  trials <- 50
+
+  bool_vec <- sapply(1:trials, function(i){
+    set.seed(10*i)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+
+    orth_basis <- .orthogonal_basis(t(plane$A))
+    new_vec <- MASS::ginv(plane$A) %*% plane$b + orth_basis %*% rnorm(6)
+
+    proj_mat <- .projection_matrix(plane$basis)
+    new_vec_offset <- new_vec - plane$offset
+    sum(abs(plane$A %*% new_vec - plane$b)) <= 1e-6 & sum(abs(proj_mat %*% new_vec_offset - new_vec_offset)) <= 1e-6
+  })
+
+  expect_true(all(bool_vec))
+})
 
 
