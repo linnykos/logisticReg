@@ -190,4 +190,104 @@ test_that(".plane has a correct representation from A to basis", {
   expect_true(all(bool_vec))
 })
 
+#######################
 
+test_that(".point_on_plane works", {
+  set.seed(1)
+  basis <- matrix(rnorm(60), 10, 6)
+  offset <- rnorm(10)
+  plane <- .plane(basis, offset)
+  res <- .point_on_plane(plane)
+
+  expect_true(length(res) == 10)
+})
+
+test_that(".point_on_plane gives a proper point", {
+  trials <- 100
+  bool_vec <- sapply(1:trials, function(x){
+    set.seed(10*i)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+
+    res <- .point_on_plane(plane)
+
+    sum(abs(plane$A %*% res- plane$b)) <= 1e-6
+  })
+
+  expect_true(all(bool_vec))
+})
+
+##########################
+
+## .distance_point_to_plane is correct
+
+test_that(".distance_point_to_plane works", {
+  set.seed(5)
+  basis <- matrix(rnorm(60), 10, 6)
+  offset <- rnorm(10)
+  plane <- .plane(basis, offset)
+  point <- rnorm(10)
+  res <- .distance_point_to_plane(point, plane)
+
+  expect_true(is.numeric(res))
+  expect_true(!is.matrix(res))
+  expect_true(length(res) == 1)
+  expect_true(res >= 0)
+})
+
+test_that(".distance_point_to_plane is always non-negative", {
+  trials <- 100
+  bool_vec <- sapply(1:trials, function(x){
+    set.seed(x)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+    point <- rnorm(10)
+
+    res <- .distance_point_to_plane(point, plane)
+
+    ifelse(res >= 0, TRUE, FALSE)
+  })
+
+  expect_true(all(bool_vec))
+})
+
+test_that(".distance_point_to_plane satisifies triangle inequality", {
+  trials <- 100
+  bool_vec <- sapply(1:trials, function(x){
+    set.seed(x)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+
+    point1 <- rnorm(10)
+    point2 <- rnorm(10)
+
+    res1 <- .distance_point_to_plane(point1, plane)
+    res2 <- .distance_point_to_plane(point2, plane)
+    dist <- .l2norm(point1 - point2)
+
+    ifelse(abs(res2-res1) <= dist, TRUE, FALSE)
+  })
+
+  expect_true(all(bool_vec))
+})
+
+test_that(".distance_point_to_plane is 0 on the plane", {
+  trials <- 100
+  bool_vec <- sapply(1:trials, function(x){
+    set.seed(x)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+
+    point <- as.numeric(basis %*% rnorm(6)) + offset
+
+    res <- .distance_point_to_plane(point, plane)
+
+    abs(res) <= 1e-6
+  })
+
+  expect_true(all(bool_vec))
+})
