@@ -1,5 +1,3 @@
-
-
 .projection_euclidean <- function(point, plane){
   stopifnot(class(plane) == "plane")
   if(ncol(plane$basis) == 0) return(plane$offset)
