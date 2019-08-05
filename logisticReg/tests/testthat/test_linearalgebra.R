@@ -57,14 +57,15 @@ test_that(".orthogonalize returns normed vectors by convention", {
   mat <- matrix(rnorm(60), 10, 6)
   res <- .orthogonalize(mat)
 
-  expect_true(all(apply(res, 2, .l2norm)) == 1)
+  expect_true(sum(abs(apply(res, 2, .l2norm) - 1)) <= 1e-6)
 })
 
 test_that(".orthogonalize returns orthogonal vectors", {
-  mat <- matrix(1:60, 10, 6)
+  set.seed(10)
+  mat <- matrix(rnorm(60), 10, 6)
   res <- .orthogonalize(mat)
 
-  expect_true(sum(all(t(res)%*%res - diag(6))) <= 1e-6)
+  expect_true(sum(abs(t(res)%*%res - diag(6))) <= 1e-6)
 })
 
 ############################
@@ -96,7 +97,7 @@ test_that(".orthogonal_basis returns normed vectors by convention", {
   mat <- matrix(rnorm(60), 10, 6)
   res <- .orthogonal_basis(mat)
 
-  expect_true(all(apply(res, 2, .l2norm)) == 1)
+  expect_true(sum(abs(apply(res, 2, .l2norm)) - 1) <= 1e-6)
 })
 
 test_that(".orthogonal_basis returns orthogonal vectors", {
@@ -104,7 +105,7 @@ test_that(".orthogonal_basis returns orthogonal vectors", {
   mat <- matrix(rnorm(60), 10, 6)
   res <- .orthogonal_basis(mat)
 
-  expect_true(sum(all(t(res)%*%res - diag(4))) <= 1e-6)
+  expect_true(sum(abs(t(res)%*%res - diag(4))) <= 1e-6)
 })
 
 ##################################
@@ -124,15 +125,15 @@ test_that(".nullspace returns normed vectors by convention", {
   mat <- matrix(rnorm(60), 6, 10)
   res <- .nullspace(mat)
 
-  expect_true(all(apply(res, 2, .l2norm)) == 1)
+  expect_true(sum(abs(apply(res, 2, .l2norm)) - 1) <= 1e-6)
 })
 
-test_that(".orthogonal_basis returns orthogonal vectors", {
+test_that(".nullspace returns orthogonal vectors", {
   set.seed(50)
   mat <- matrix(rnorm(60), 6, 10)
   res <- .nullspace(mat)
 
-  expect_true(sum(all(t(res)%*%res - diag(4))) <= 1e-6)
+  expect_true(sum(abs(t(res)%*%res - diag(4))) <= 1e-6)
 })
 
 ####################
@@ -250,7 +251,7 @@ test_that(".point_on_plane works", {
   basis <- matrix(rnorm(60), 10, 6)
   offset <- rnorm(10)
   plane <- .plane(basis, offset)
-  res <- .point_on_plane(plane)
+  res <- .point_on_plane(plane$A, plane$b)
 
   expect_true(length(res) == 10)
 })
@@ -263,7 +264,7 @@ test_that(".point_on_plane gives a proper point", {
     offset <- rnorm(10)
     plane <- .plane(basis, offset)
 
-    res <- .point_on_plane(plane)
+    res <- .point_on_plane(plane$A, plane$b)
 
     sum(abs(plane$A %*% res- plane$b)) <= 1e-6
   })
@@ -354,4 +355,15 @@ test_that(".distance_point_to_plane is correct on an example", {
   res <- .distance_point_to_plane(point, plane)
 
   expect_true(abs(res - 39/sqrt(33)) <= 1e-6)
+})
+
+# example from https://www.math.ucla.edu/~ronmiech/Calculus_Problems/32A/chap11/section5/718d63/718_63.html
+test_that(".distance_point_to_plane is correct on an example 2", {
+  plane <- .plane(basis = NA, offset = NA, A = matrix(c(1,-2,-2), nrow = 1, ncol = 3),
+                  b = 1)
+  point <- c(2, 8, 5)
+
+  res <- .distance_point_to_plane(point, plane)
+
+  expect_true(abs(res - 25/3) <= 1e-6)
 })

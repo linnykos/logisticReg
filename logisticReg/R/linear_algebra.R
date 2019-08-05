@@ -35,7 +35,7 @@
 
   for(i in 2:d){
     proj_mat <- .projection_matrix(mat[,c(1:(i-1)), drop = F])
-    tmp <- (diag(n) - proj_mat) %*% mat[,i]
+    tmp <- mat[,i] - proj_mat %*% mat[,i]
     mat[,i] <- tmp/.l2norm(tmp)
   }
 
@@ -99,8 +99,13 @@
 #' there exists a vector \code{alpha} such that \code{y = offset + basis %*% alpha},
 #' and 2) all vectors \code{y} such that \code{A%*%y = b}.
 #'
+#' If you want to input \code{A} and \code{b} into \code{.plane}, you must
+#' explicitly set both \code{basis} and \code{offset} to be \code{NA}.
+#'
 #' @param basis matrix
 #' @param offset vector
+#' @param A matrix
+#' @param b vector
 #'
 #' @return list
 #' @export
@@ -178,15 +183,13 @@
   }
 }
 
-#' Title
+#' Compute the distance from a point to plane
 #'
-#' @param point
-#' @param plane
+#' @param point vector
+#' @param plane object of class \code{plane}
 #'
-#' @return
+#' @return numeric
 #' @export
-#'
-#' @examples
 .distance_point_to_plane <- function(point, plane){
   stopifnot(length(point) == ncol(plane$A))
 
