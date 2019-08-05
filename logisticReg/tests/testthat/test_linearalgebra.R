@@ -154,6 +154,8 @@ test_that(".plane works", {
   expect_true(length(res$b) == 4)
 })
 
+# generate a point via (basis*alpha + offset) representation, and make sure
+#  it satisfies Ax =b
 test_that(".plane has a correct representation from basis to A", {
   trials <- 50
 
@@ -170,6 +172,9 @@ test_that(".plane has a correct representation from basis to A", {
   expect_true(all(bool_vec))
 })
 
+# generate a point that is guaranteed to satisfy (Ax=b) called "new_vec", and make sure
+#  it satisfies (basis*alpha+offset) representation by (new_vec - offset) is the basis
+#  since it does not move when you project it onto the basis
 test_that(".plane has a correct representation from A to basis", {
   trials <- 50
 
@@ -190,6 +195,54 @@ test_that(".plane has a correct representation from A to basis", {
   expect_true(all(bool_vec))
 })
 
+test_that(".plane agree on representation of basis and offset", {
+  trials <- 50
+
+  bool_vec <- sapply(1:trials, function(i){
+    set.seed(10*i)
+    basis <- matrix(rnorm(60), 10, 6)
+    offset <- rnorm(10)
+    plane <- .plane(basis, offset)
+    plane2 <- .plane(basis = NA, offset = NA, A = plane$A, b = plane$b)
+
+    point <- .point_on_plane(plane$A, plane$b)
+
+    residual1 <- point - plane$offset
+    basis_complete1 <- cbind(plane$basis, .orthogonal_basis(plane$basis))
+    sol1 <- solve(basis_complete1, residual1)
+
+    residual2 <- point - plane2$offset
+    basis_complete2 <- cbind(plane2$basis, .orthogonal_basis(plane2$basis))
+    sol2 <- solve(basis_complete2, residual2)
+
+    all(c(dim(plane$basis) == dim(plane2$basis), all(abs(sol1[7:10]) <= 1e-6),
+          all(abs(sol2[7:10]) <= 1e-6)))
+  })
+
+  expect_true(all(bool_vec))
+})
+
+test_that(".plane agree on representation of A and b", {
+  trials <- 50
+
+  bool_vec <- sapply(1:trials, function(i){
+    set.seed(10*i)
+    A <- matrix(rnorm(12), 2, 6)
+    b <- rnorm(2)
+    plane <- .plane(basis = NA, offset = NA, A = A, b = b)
+    plane2 <- .plane(basis = plane$basis, offset = plane$offset)
+
+    point <- plane$basis %*% rnorm(4) + plane$offset
+
+    residual1 <- plane$A %*% point - plane$b
+    residual2 <- plane2$A %*% point - plane2$b
+
+    all(abs(c(residual1, residual2)) <= 1e-6) & all(dim(plane$A) == dim(plane2$A))
+  })
+
+  expect_true(all(bool_vec))
+})
+
 #######################
 
 test_that(".point_on_plane works", {
@@ -205,7 +258,7 @@ test_that(".point_on_plane works", {
 test_that(".point_on_plane gives a proper point", {
   trials <- 100
   bool_vec <- sapply(1:trials, function(x){
-    set.seed(10*i)
+    set.seed(10*x)
     basis <- matrix(rnorm(60), 10, 6)
     offset <- rnorm(10)
     plane <- .plane(basis, offset)
@@ -290,4 +343,15 @@ test_that(".distance_point_to_plane is 0 on the plane", {
   })
 
   expect_true(all(bool_vec))
+})
+
+# example from https://mathinsight.org/distance_point_plane_examples
+test_that(".distance_point_to_plane is correct on an example", {
+  plane <- .plane(basis = NA, offset = NA, A = matrix(c(2,-2,5), nrow = 1, ncol = 3),
+                  b = -8)
+  point <- c(4, -4, 3)
+
+  res <- .distance_point_to_plane(point, plane)
+
+  expect_true(abs(res - 39/sqrt(33)) <= 1e-6)
 })

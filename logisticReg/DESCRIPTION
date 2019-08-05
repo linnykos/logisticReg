@@ -12,7 +12,9 @@ Imports:
     clplite,
     glmnet,
     MASS,
-    e1071
+    e1071,
+    rje,
+    Matrix
 Suggests:
     testthat
 RoxygenNote: 6.1.1
