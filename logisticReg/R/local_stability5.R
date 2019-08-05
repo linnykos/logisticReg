@@ -1,4 +1,5 @@
-.distance_point_to_set <- function(dat, y, lambda){
+# computing Remark 10 in Ali, Tibs 2018: The generalized lasso problem and uniqueness
+.distance_point_to_set5 <- function(dat, y, lambda){
   stopifnot(length(y) == nrow(dat))
   y <- as.numeric(y)
   n <- nrow(dat); d <- ncol(dat)
