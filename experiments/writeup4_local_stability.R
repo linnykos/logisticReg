@@ -43,6 +43,7 @@ table(sign_string)
 sign_string <- as.numeric(as.factor(sign_string))
 
 plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+plot(1:length(unique(sign_string)), col = 1:length(sign_string), pch = 16)
 
 ######################
 
@@ -64,7 +65,6 @@ for(b_idx in 1:3){
   }
 }
 
-
 ###################
 
 # compute the local stability set for formulation 1
@@ -77,10 +77,67 @@ dist_vec1 <- sapply(1:nrow(y_mat), function(i){
 
 bool_vec1 <- (dist_vec1 <= 1e-1)
 
+png("../figures/writeup4_gaussian_local_stability1.png", width = 3200, height = 1600, units = "px",
+    res = 300)
 par(mfrow = c(1,2))
 plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
 plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec1, asp = T)
+graphics.off()
 
 ####################
 
+# plot one plot for each of possible e_idx and s_vec
+stopifnot(length(y) == nrow(dat))
+y <- as.numeric(y)
+n <- nrow(dat); d <- ncol(dat)
 
+powerset <- .powerset(1:d)[-1] # determine e_idx
+
+for(ll in 1:length(powerset)){
+  print(ll)
+  e_idx <- powerset[[ll]]
+  len <- length(e_idx)
+  powerset_inner <- .powerset(1:len) # determine s_vec
+  k <- length(powerset_inner)
+
+  for(i in 1:k){
+    s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
+
+    dist_vec <- sapply(1:nrow(y_mat), function(jj){
+      .distance_to_stability_set1_instance(dat, as.numeric(y_mat[jj,]), lambda, e_idx, s_vec)
+    })
+
+    bool_vec <- (dist_vec <= 1e-1)
+
+    filesuffix <- rep(0, d)
+    filesuffix[e_idx] <- s_vec
+    filesuffix <- paste0(filesuffix, collapse = "_")
+    png(paste0("../figures/writeup4_gaussian_local_stability1_", filesuffix, ".png"),
+        width = 3200, height = 1600, units = "px", res = 300)
+    par(mfrow = c(1,2))
+    plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+    plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec, asp = T)
+    graphics.off()
+  }
+
+  ###################
+
+  # compute the local stability set for formulation 2
+
+  dist_vec2 <- sapply(1:nrow(y_mat), function(i){
+    if(i %% floor(nrow(y_mat)/10) == 0) cat('*')
+    .distance_to_stability_set2 (dat, as.numeric(y_mat[i,]), lambda)
+  })
+
+
+  bool_vec2 <- (dist_vec2 <= 1e-1)
+
+  png("../figures/writeup4_gaussian_local_stability2.png", width = 3200, height = 1600, units = "px",
+      res = 300)
+  par(mfrow = c(1,2))
+  plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+  plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec2, asp = T)
+  graphics.off()
+
+  ####################
+}

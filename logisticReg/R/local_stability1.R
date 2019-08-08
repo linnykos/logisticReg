@@ -16,15 +16,19 @@
 
     for(i in 1:k){
       s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
-      ginv_mat <- MASS::ginv(dat[,e_idx,drop = F])
-
-      dist_vec[i] <- min(abs(sapply(1:len, function(x){
-        ginv_mat[x,] %*% (y - lambda*t(ginv_mat)%*%s_vec)
-      })))
+      dist_vec[i] <- .distance_to_stability_set1_instance(dat, y, lambda, e_idx, s_vec)
     }
 
-    min(dist_vec)
+    min(dist_vec) # min over all possible sign vectors
   }))
 
-  min(all_dist_vec)
+  min(all_dist_vec) # min over all e_idx
+}
+
+.distance_to_stability_set1_instance <- function(dat, y, lambda, e_idx, s_vec){
+  ginv_mat <- MASS::ginv(dat[,e_idx,drop = F])
+
+  min(abs(sapply(1:len, function(x){
+    ginv_mat[x,] %*% (y - lambda*t(ginv_mat)%*%s_vec)
+  })))
 }

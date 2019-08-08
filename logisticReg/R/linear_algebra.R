@@ -28,6 +28,7 @@
 #' @export
 .orthogonalize <- function(mat){
   stopifnot(ncol(mat) <= nrow(mat))
+  if(all(dim(mat) == 1)) return(matrix(1,1,1))
   d <- ncol(mat); n <- nrow(mat)
 
   mat[,1] <- mat[,1]/.l2norm(mat[,1])
