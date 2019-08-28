@@ -119,25 +119,43 @@ for(ll in 1:length(powerset)){
     plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec, asp = T)
     graphics.off()
   }
-
-  ###################
-
-  # compute the local stability set for formulation 2
-
-  dist_vec2 <- sapply(1:nrow(y_mat), function(i){
-    if(i %% floor(nrow(y_mat)/10) == 0) cat('*')
-    .distance_to_stability_set2 (dat, as.numeric(y_mat[i,]), lambda)
-  })
-
-
-  bool_vec2 <- (dist_vec2 <= 1e-1)
-
-  png("../figures/writeup4_gaussian_local_stability2.png", width = 3200, height = 1600, units = "px",
-      res = 300)
-  par(mfrow = c(1,2))
-  plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
-  plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec2, asp = T)
-  graphics.off()
-
-  ####################
 }
+
+###################
+
+# compute the local stability set for formulation 2
+
+dist_vec2 <- sapply(1:nrow(y_mat), function(i){
+  if(i %% floor(nrow(y_mat)/10) == 0) cat('*')
+  .distance_to_stability_set2 (dat, as.numeric(y_mat[i,]), lambda)
+})
+
+
+bool_vec2 <- (dist_vec2 <= 1e-1)
+
+png("../figures/writeup4_gaussian_local_stability2.png", width = 3200, height = 1600, units = "px",
+    res = 300)
+par(mfrow = c(1,2))
+plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec2, asp = T)
+graphics.off()
+
+####################
+
+# compute the local stability set for formulation 5
+
+dist_vec5 <- sapply(1:nrow(y_mat), function(i){
+  if(i %% floor(nrow(y_mat)/10) == 0) cat('*')
+  .distance_to_stability_set5(dat, as.numeric(y_mat[i,]), lambda)
+})
+
+ bool_vec5 <- (dist_vec5 <= 1e-1)
+
+png("../figures/writeup4_gaussian_local_stability5.png", width = 3200, height = 1600, units = "px",
+    res = 300)
+par(mfrow = c(1,2))
+plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+plot(y_mat[,1], y_mat[,2], pch = 16, col = bool_vec5, asp = T)
+graphics.off()
+
+

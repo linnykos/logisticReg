@@ -68,3 +68,45 @@ test_that(".construct_kbs is at where the lower-dimensional intersect", {
   }
 })
 
+################
+
+## .construct_mab is correct
+
+test_that(".construct_mab works", {
+  set.seed(10)
+  dat <- matrix(rnorm(50), 5, 10)
+  a_idx <- c(1,4,5,6)
+  b_idx <- c(1:6)
+
+  res <- .construct_mab(dat, a_idx, b_idx)
+
+  expect_true(is.matrix(res))
+})
+
+test_that(".construct_mab is  orthogonal to vectors in the nullsapce of X^T_b_idx", {
+  set.seed(10)
+  dat <- matrix(rnorm(50), 5, 10)
+  a_idx <- c(1,2)
+  b_idx <- c(1:3)
+
+  mab <- .construct_mab(dat, a_idx, b_idx)
+  tmp <- .nullspace(t(dat[,b_idx]))
+
+  res <- apply(tmp, 2, function(x){
+    mab %*% x
+  })
+
+  expect_true(sum(abs(res)) <= 1e-6)
+})
+
+test_that(".construct_mab works a_idx is empty", {
+  set.seed(10)
+  dat <- matrix(rnorm(50), 5, 10)
+  a_idx <- numeric(0)
+  b_idx <- c(1:3)
+
+  res <- .construct_mab(dat, a_idx, b_idx)
+
+  expect_true(is.matrix(res))
+})
+

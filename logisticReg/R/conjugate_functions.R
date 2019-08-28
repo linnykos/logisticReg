@@ -1,0 +1,13 @@
+.conjugate_bernoulli <- function(x, tol = 1e-3){
+  if(any(x < 0) | x >= 1-tol) return(Inf)
+
+  sum(sapply(x, function(x_i){
+    log(x_i/(1-x_i))*x_i - log(1/(1-x_i))
+  }))
+}
+
+.conjugate_grad_bernoulli <- function(x, tol = 1e-3){
+  stopifnot(all(x >= 0), all(x <= 1-tol))
+
+  sapply(x, function(x_i){log(x_i/(1-x_i))})
+}

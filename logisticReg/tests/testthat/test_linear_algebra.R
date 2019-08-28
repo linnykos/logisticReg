@@ -367,3 +367,51 @@ test_that(".distance_point_to_plane is correct on an example 2", {
 
   expect_true(abs(res - 25/3) <= 1e-6)
 })
+
+###################
+
+## .intersect_bases is correct
+
+test_that(".intersect_bases works", {
+  set.seed(10)
+  basis1 <- matrix(rnorm(25), 5, 5)
+  basis2 <- matrix(rnorm(25), 5, 5)
+  res <- .intersect_bases(basis1, basis2)
+
+  expect_true(is.matrix(res))
+})
+
+# from https://math.stackexchange.com/questions/25371/how-to-find-basis-for-intersection-of-two-vector-spaces-in-mathbbrn
+test_that(".intersect_bases gives the correct solution", {
+  set.seed(10)
+  basis1 <- matrix(c(1,1,0,-1, 0,1,3,1), nrow = 4)
+  basis2 <- matrix(c(0,-1,-2,1, 1,2,2,-2), nrow = 4)
+  res <- .intersect_bases(basis1, basis2)
+
+  expect_true(all(dim(res) == c(4,1)))
+  expect_true(abs(res[3]) <= 1e-5)
+  expect_true(sum(abs(diff(res[c(1,2,4)]/c(1,1,-1)))) <= 1e-5)
+})
+
+test_that(".intersect_bases gives solutions in the intersection correctly", {
+  trials <- 50
+
+  bool_vec <- sapply(1:trials, function(x){
+    set.seed(x)
+    basis1 <- matrix(rnorm(15), 5, 3)
+    basis2 <- matrix(rnorm(15), 5, 3)
+
+    res <- .intersect_bases(basis1, basis2)
+
+    bool <- apply(res, 2, function(y){
+      basis_complete <- cbind(basis1, .orthogonal_basis(basis1))
+      tmp <- solve(basis_complete, y)
+      sum(abs(tmp[(ncol(basis1)+1):length(tmp)])) <= 1e-5
+    })
+
+    all(bool)
+  })
+
+  expect_true(all(bool_vec))
+})
+

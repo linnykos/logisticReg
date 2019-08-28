@@ -22,12 +22,15 @@
 #' the same column space as \code{mat} but each column now
 #' is orthogonal with one another and has unit norm.
 #'
+#' Return a matrix of 0 column if \code{mat} is an empty matrix
+#'
 #' @param mat matrix
 #'
 #' @return matrix
 #' @export
 .orthogonalize <- function(mat){
   stopifnot(ncol(mat) <= nrow(mat))
+  if(ncol(mat) == 0) return(mat)
   if(all(dim(mat) == 1)) return(matrix(1,1,1))
   d <- ncol(mat); n <- nrow(mat)
 
@@ -65,6 +68,7 @@
   rand_mat <- (diag(n) - proj_mat) %*% rand_mat
 
   rand_mat <- apply(rand_mat, 2, function(x){x/.l2norm(x)})
+  if(length(rand_mat) == 1) rand_mat <- matrix(1, 1, 1)
   .orthogonalize(rand_mat)
 }
 
@@ -200,4 +204,20 @@
   proj_mat <- .projection_matrix(plane$basis)
   closest_point <- proj_mat%*%(point - plane$offset) + plane$offset
   .l2norm(point - closest_point)
+}
+
+# from https://math.stackexchange.com/questions/25371/how-to-find-basis-for-intersection-of-two-vector-spaces-in-mathbbrn
+.intersect_bases <- function(basis1, basis2){
+  super_basis <- cbind(basis1, -basis2)
+  null <- MASS::Null(t(super_basis))
+
+  if(ncol(null) == 0){
+    intersection <- matrix(NA, nrow = nrow(basis1), ncol = 0)
+  } else {
+    intersection <- apply(null, 2, function(x){
+      basis1 %*% x[1:ncol(basis1)]
+    })
+  }
+
+  .orthogonalize(intersection)
 }

@@ -1,5 +1,6 @@
 # computing Remark 10 in Ali, Tibs 2018: The generalized lasso problem and uniqueness
-.distance_point_to_set5 <- function(dat, y, lambda){
+
+.distance_to_stability_set5 <- function(dat, y, lambda){
   stopifnot(length(y) == nrow(dat))
   y <- as.numeric(y)
   n <- nrow(dat); d <- ncol(dat)
@@ -31,7 +32,6 @@
 
           dist_vec[(i-1)*k+j] <- .distance_point_to_plane(point, nullspace)
         }
-
       }
     }
 
@@ -44,7 +44,7 @@
 .construct_mab <- function(dat, a_idx, b_idx, tol = 1e-6){
   stopifnot(all(a_idx %in% b_idx), max(b_idx) <= ncol(dat))
   n <- nrow(dat); d <- ncol(dat)
-  if(all(b_idx %in% a_idx)) return(matrix(0, ncol = 1, nrow = n)) # not sure about this
+  if(all(b_idx %in% a_idx)) return(matrix(0, ncol = 1, nrow = n))
 
   minusb <- c(1:d)[-b_idx]
   d_minusb <- .diagonal_matrix(d, minusb)
@@ -55,15 +55,8 @@
   term2 <- d_bnota %*% MASS::ginv(dat %*% .projection_matrix(null_d_minusb))
 
   null_dat <- .nullspace(dat)
-  idx <- sort(unique(unlist(lapply(1:ncol(null_d_minusb), function(x){
-    which(abs(null_d_minusb[,x]) >= tol)
-  }))))
+  null_intersect <- .intersect_bases(null_d_minusb, null_dat)
 
-  null_intersect <- null_dat
-  if(length(idx) < nrow(null_dat)){
-    null_intersect[-idx,] <- 0
-  }
-  null_intersect <- apply(null_intersect, 2, function(x){x/.l2norm(x)})
   projection_space <- .orthogonal_basis(d_bnota %*% null_intersect)
 
   # compute P_{[D_{B \backslash A}(null(X) \cap null(D_{-B}))]^c}
