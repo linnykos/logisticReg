@@ -8,4 +8,6 @@ test_that(".projection_bregman works", {
   plane <- .plane(basis = matrix(c(.7,.3), nrow = 2, ncol = 1))
 
   res <- .projection_bregman(z, f, grad_f, plane)
+
+  expect_true(is.numeric(res))
 })
