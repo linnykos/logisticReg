@@ -11,3 +11,11 @@
 
   sapply(x, function(x_i){log(x_i/(1-x_i))})
 }
+
+.conjugate_gaussian <- function(x){
+  .l2norm(x)^2/2
+}
+
+.conjugate_grad_gaussian <- function(x){
+  x
+}

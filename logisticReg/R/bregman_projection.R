@@ -21,30 +21,36 @@
 
   iter <- 1
   x_prev <- rep(Inf, length(z))
-  x_current <- z
+  x_current <- plane$offset + plane$basis %*% rep(1, ncol(plane$basis))
   while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
     x_prev <- x_current
 
     eta <- .backtrack_line_search(x_current, g, grad_g, G_t)
-    x_current <- prox(x_prev - eta * grad_f(x_prev))
+    x_current <- prox(x_prev - eta * grad_g(x_prev))
 
     iter <- iter + 1
+    # print(x_current)
   }
 
-  x_current
+  as.numeric(x_current)
 }
 
-.backtrack_line_search <- function(x, g, grad_g, G_t, beta = 0.5, eta_init = 1){
+.backtrack_line_search <- function(x, g, grad_g, G_t, beta = 0.5, eta_init = 1, tol = 1e-3){
   eta <- eta_init
   gx <- g(x)
   grad_gx <- grad_g(x)
-  Gtx <- G_t(x)
+  Gtx <- G_t(x, eta)
+  counter <- 1
 
   while(TRUE){
     val1 <- g(x - eta*Gtx)
     val2 <- gx - eta * t(grad_gx)%*%Gtx + eta*.l2norm(Gtx)^2/2
-    if(val2 < val1) break()
+    if(val2 > val1) break()
+    if(abs(eta) <= tol) {eta <- 0; break()}
+    # print(paste0(counter, ": ", eta, " // ", val1, " vs. ", val2))
     eta <- eta*beta
+
+    counter <- counter + 1
   }
 
   eta
