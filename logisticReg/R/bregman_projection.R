@@ -32,7 +32,9 @@
     # print(x_current)
   }
 
-  as.numeric(x_current)
+  res <- as.numeric(x_current)
+  attributes(res) <- list("iteration" = iter, "tolerance" = .l2norm(x_prev - x_current))
+  res
 }
 
 .backtrack_line_search <- function(x, g, grad_g, G_t, beta = 0.5, eta_init = 1, tol = 1e-3){
