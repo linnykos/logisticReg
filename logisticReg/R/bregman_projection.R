@@ -10,11 +10,12 @@
 }
 
 # apply a bregman projection onto a plane
-.projection_bregman <- function(z, f, grad_f, plane, max_iter = 100, tol = 1e-3){
-  proj_mat <- .projection_matrix(plane$basis)
+.projection_bregman <- function(z, plane, distr_class = "bernoulli", max_iter = 100, tol = 1e-3){
+  res <- .setup_prox_function(plane, distr_class)
+  f <- res$f; grad_f <- res$grad_f; prox <- res$prox
   grad_f_z <- grad_f(z)
 
-  prox <- function(x){proj_mat %*% x}
+
   g <- function(x){f(x) - f(z) - t(grad_f_z) %*% (x-z)}
   grad_g <- function(x){grad_f(x) - grad_f_z}
   G_t <- function(x, eta){(x - prox(x - eta * (grad_f(x) - grad_f_z)))/eta}
@@ -35,6 +36,66 @@
   res <- as.numeric(x_current)
   attributes(res) <- list("iteration" = iter, "tolerance" = .l2norm(x_prev - x_current))
   res
+}
+
+.setup_prox_function <- function(plane, distr_class, tol = 1e-3){
+
+  if(distr_class == "bernoulli"){
+    # can only handle the case where the plane is 1d in a 2d space
+    stopifnot(all(dim(plane$basis) == c(2,1)))
+    f <- .conjugate_bernoulli; grad_f <- .conjugate_grad_bernoulli
+
+    # find the 2 points of intersection with the [0,1-tol]^2 square, or return error if none found
+    prox <- .projection_operator_bernoulli(x, plane, tol = tol)
+
+  } else if(distr_class == "gaussian"){
+    f <- .conjugate_gaussian; grad_f <- .conjugate_grad_gaussian
+
+    proj_mat <- .projection_matrix(plane$basis)
+    prox <- function(x){(proj_mat %*% (x - plane$offset)) + plane$offset}
+
+  } else {
+    stop("distr_class not properly specified")
+  }
+
+  list(f = f, grad_f = grad_f, prox = prox)
+}
+
+# technical function for specifically bregman for bernoulli distribution, not for general use
+.projection_operator_bernoulli <- function(x, plane, tol = 1e-3){
+  proj_mat <- .projection_matrix(plane$basis)
+
+  # if any of the coordinates of res are outside [0,1), project to the boundary
+  plane_list <- list(.plane(basis = matrix(c(0,1), 2, 1), offset = c(0,0)),
+                     .plane(basis = matrix(c(1,0), 2, 1), offset = c(0,0)),
+                     .plane(basis = matrix(c(0,1), 2, 1), offset = c(1-tol, 0)),
+                     .plane(basis = matrix(c(1,0), 2, 1), offset = c(0,1-tol)))
+  point_mat <- sapply(plane_list, function(p){
+    .intersect_two_lines(plane$A, p$A, plane$b, p$b)
+  })
+
+  idx <- apply(point_mat, 2, function(x){all(x >= 0) & all(x < 1)})
+  stopifnot(sum(idx) == 2)
+
+  point_mat <- point_mat[,idx]
+
+  function(x){
+    res <- (proj_mat %*% (x - plane$offset)) + plane$offset
+    if(any(x < 0) | any(x >= 1)){
+      dist1 <- .l2norm(x- point_mat[,1]); dist2 <- .l2norm(x - point_mat[,2])
+      if(dist1 < dist2) res <- point_mat[,1] else res <- point_mat[,2]
+    }
+    res
+  }
+}
+
+# intersect two lines of form A1%*%y=b1 and A2%*%y=b2
+.intersect_two_lines <- function(A1, A2, b1, b2){
+  stopifnot(all(dim(A1) == c(1,2)), all(dim(A2) == c(1,2)), length(b1) == 1, length(b2) == 1)
+  A_total <- rbind(A1, A2)
+  b_total <- c(b1, b2)
+
+  solve(A_total, b_total)
 }
 
 .backtrack_line_search <- function(x, g, grad_g, G_t, beta = 0.5, eta_init = 1, tol = 1e-3){
