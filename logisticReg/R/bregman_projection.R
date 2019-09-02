@@ -15,7 +15,6 @@
   f <- res$f; grad_f <- res$grad_f; prox <- res$prox
   grad_f_z <- grad_f(z)
 
-
   g <- function(x){f(x) - f(z) - t(grad_f_z) %*% (x-z)}
   grad_g <- function(x){grad_f(x) - grad_f_z}
   G_t <- function(x, eta){(x - prox(x - eta * (grad_f(x) - grad_f_z)))/eta}
@@ -23,6 +22,7 @@
   iter <- 1
   x_prev <- rep(Inf, length(z))
   x_current <- res$x_current
+  if(all(is.na(x_current))) return(x_current)
 
 
   while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
@@ -57,8 +57,8 @@
      .intersect_two_lines(plane$A, p$A, plane$b, p$b)
    })
 
-   idx <- which(apply(point_mat, 2, function(x){all(x >= 0) & all(x < 1)}))
-   stopifnot(length(idx) == 2)
+   idx <- which(apply(point_mat, 2, function(x){all(x > 0) & all(x < 1)}))
+   if(length(idx) != 2) return(rep(NA, 2))
 
    x_current <- point_mat[,idx[1]]
 
@@ -72,34 +72,6 @@
 
   list(f = f, grad_f = grad_f, prox = prox, x_current = x_current)
 }
-
-# # technical function for specifically bregman for bernoulli distribution, not for general use
-# .projection_operator_bernoulli <- function(x, plane, tol = 1e-3){
-#   proj_mat <- .projection_matrix(plane$basis)
-#
-#   # if any of the coordinates of res are outside [0,1), project to the boundary
-#   plane_list <- list(.plane(basis = matrix(c(0,1), 2, 1), offset = c(0,0)),
-#                      .plane(basis = matrix(c(1,0), 2, 1), offset = c(0,0)),
-#                      .plane(basis = matrix(c(0,1), 2, 1), offset = c(1-tol, 0)),
-#                      .plane(basis = matrix(c(1,0), 2, 1), offset = c(0,1-tol)))
-#   point_mat <- sapply(plane_list, function(p){
-#     .intersect_two_lines(plane$A, p$A, plane$b, p$b)
-#   })
-#
-#   idx <- apply(point_mat, 2, function(x){all(x >= 0) & all(x < 1)})
-#   stopifnot(sum(idx) == 2)
-#
-#   point_mat <- point_mat[,idx]
-#
-#   function(x){
-#     res <- (proj_mat %*% (x - plane$offset)) + plane$offset
-#     if(any(x < 0) | any(x >= 1)){
-#       dist1 <- .l2norm(x- point_mat[,1]); dist2 <- .l2norm(x - point_mat[,2])
-#       if(dist1 < dist2) res <- point_mat[,1] else res <- point_mat[,2]
-#     }
-#     res
-#   }
-# }
 
 # intersect two lines of form A1%*%y=b1 and A2%*%y=b2
 .intersect_two_lines <- function(A1, A2, b1, b2){

@@ -1,4 +1,4 @@
-.conjugate_bernoulli <- function(x, tol = 1e-3){
+.conjugate_bernoulli <- function(x, tol = 1e-4){
   if(any(x < 0) | any(x >= 1-tol)) return(Inf)
 
   idx <- which(x > tol)
@@ -9,7 +9,7 @@
   }))
 }
 
-.conjugate_grad_bernoulli <- function(x, tol = 1e-3){
+.conjugate_grad_bernoulli <- function(x, tol = 1e-4){
   stopifnot(all(x >= 0), all(x <= 1-tol))
 
   sapply(x, function(x_i){log(x_i/(1-x_i))})
