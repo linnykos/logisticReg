@@ -11,6 +11,11 @@
 
 # apply a bregman projection onto a plane
 .projection_bregman <- function(z, plane, distr_class = "bernoulli", max_iter = 100, tol = 1e-3){
+  if(nrow(plane$A) == ncol(plane$A)) {
+    res <- as.numeric(plane$b)
+    attributes(res) <- list("iteration" = NA, "tolerance" = NA)
+    return(res)
+  }
   res <- .setup_bregman_function(plane, distr_class)
   f <- res$f; grad_f <- res$grad_f; prox <- res$prox
   grad_f_z <- grad_f(z)
@@ -22,8 +27,11 @@
   iter <- 1
   x_prev <- rep(Inf, length(z))
   x_current <- res$x_current
-  if(all(is.na(x_current))) return(x_current)
-
+  if(all(is.na(x_current))) {
+    res <- as.numeric(x_current)
+    attributes(res) <- list("iteration" = NA, "tolerance" = NA)
+    return(res)
+  }
 
   while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
     x_prev <- x_current
@@ -57,8 +65,8 @@
      .intersect_two_lines(plane$A, p$A, plane$b, p$b)
    })
 
-   idx <- which(apply(point_mat, 2, function(x){all(x > 0) & all(x < 1)}))
-   if(length(idx) != 2) return(rep(NA, 2))
+   idx <- which(apply(point_mat, 2, function(x){all(x > tol) & all(x < 1-tol)}))
+   if(length(idx) != 2) list(f = f, grad_f = grad_f, prox = prox, x_current = rep(NA, 2))
 
    x_current <- point_mat[,idx[1]]
 

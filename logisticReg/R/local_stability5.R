@@ -1,6 +1,6 @@
 # computing Remark 10 in Ali, Tibs 2018: The generalized lasso problem and uniqueness
 
-.distance_to_stability_set5 <- function(dat, y, lambda){
+.distance_to_stability_set5 <- function(dat, y, lambda, distr_class = "gaussian"){
   stopifnot(length(y) == nrow(dat))
   y <- as.numeric(y)
   n <- nrow(dat); d <- ncol(dat)
@@ -8,6 +8,7 @@
   powerset <- .powerset(1:d)[-1] # determine b_idx
 
   all_dist_vec <- unlist(lapply(powerset, function(b_idx){
+    # print(paste0("b_idx: ", paste0(b_idx, collapse = "-")))
     len <- length(b_idx)
     powerset_inner <- .powerset(1:len) # determine s_vec OR a_idx
     k <- length(powerset_inner)
@@ -16,11 +17,28 @@
 
     for(i in 1:k){
       for(j in 1:k){
+        # print(paste0("i: ", i))
+        # print(paste0("j: ", j))
         s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
         a_idx <- b_idx[powerset_inner[[j]]]
 
         kbs <- .construct_kbs(dat, b_idx, s_vec, lambda)
-        point <- .projection_euclidean(rep(0,n), .plane(basis = kbs$basis, offset = y - kbs$offset))
+        plane <- .plane(basis = kbs$basis, offset = y - kbs$offset)
+        if(distr_class == "gaussian") {
+          point <- .projection_euclidean(rep(0,n), plane)
+          point <- .conjugate_grad_gaussian(point)
+
+        } else if(distr_class == "bernoulli") {
+          point <- .projection_bregman(rep(0.5,n), plane, distr_class = distr_class)
+          if(all(is.na(point)) | any(point <= 0) | any(point >= 1)) {
+            dist_vec[(i-1)*k+j] <- NA; next()
+          }
+          point <- .conjugate_grad_bernoulli(point)
+
+        } else {
+          stop("distr_class not properly specified")
+        }
+
 
         mab <- .construct_mab(dat, a_idx = a_idx, b_idx = b_idx)
 
