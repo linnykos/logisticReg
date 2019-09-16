@@ -32,6 +32,8 @@ model_mat <- sapply(1:nrow(y_mat), function(i){
   res$model
 })
 
+save.image("../experiments/writeup5_bernoulli_polytope.RData")
+
 sign_string <- apply(model_mat, 2, function(x){paste0(x, collapse = "_")})
 table(sign_string)
 sign_string <- as.numeric(as.factor(sign_string))
