@@ -2,7 +2,7 @@
 # this stems from my inability to represent the polytope in a convenient form that can be
 #  automated (in terms of calculation)
 
-.populate_polytope <- function(dat, lambda, grid_size = 100, lim = c(-1,1)){
+.populate_polytope <- function(dat, lambda, grid_size = 100, lim = c(-.5,.5)){
   stopifnot(all(dim(dat) == c(2,3)))
 
   point_mat <- expand.grid(seq(lim[1], lim[2], length.out = grid_size), seq(lim[1], lim[2], length.out = grid_size))
@@ -17,7 +17,7 @@
 #  form all possible k_bs lines. if a k_bs line has all the points in the polytope on one side,
 #  then we say it's part of the polytopes
 # to see if two lines are neighbors, see if their intersection yields a point near the polytope
-form_polytope <- function(dat, lambda){
+.form_polytope <- function(dat, lambda){
   stopifnot(all(dim(dat) == c(2,3)))
 
   n <- nrow(dat); d <- ncol(dat)
@@ -38,6 +38,8 @@ form_polytope <- function(dat, lambda){
     for(i in 1:k){
       s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
       kbs_list[[counter]] <- .construct_kbs(dat, b_idx, s_vec, lambda)
+      model_vec <- rep(NA, 3); model_vec[b_idx] <- s_vec
+      attr(kbs_list[[counter]], "model") <- model_vec
       counter <- counter + 1
     }
   }
