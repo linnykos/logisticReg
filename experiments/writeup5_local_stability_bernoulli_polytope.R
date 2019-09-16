@@ -24,6 +24,12 @@ for(i in 1:length(polytope)){
   polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
 }
 
+for(i in 1:length(polytope)){
+  zz = rnorm(1000)*10
+  val = sapply(1:length(zz), function(x){polytope[[i]]$plane$basis*zz[x]+polytope[[i]]$plane$offset})
+  lines(val[1,], val[2,], col = i, lwd = 2)
+}
+
 ########
 
 model_mat <- sapply(1:nrow(y_mat), function(i){
