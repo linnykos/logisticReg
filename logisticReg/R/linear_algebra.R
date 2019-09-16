@@ -221,3 +221,18 @@
 
   .orthogonalize(intersection)
 }
+
+# specialized to only two 1d lines
+.intersect_lines <- function(plane1, plane2){
+  stopifnot(class(plane1) == "plane", class(plane2) == "plane",
+    all(dim(plane1$A) == c(1,2)), all(dim(plane2$A) == c(1,2)),
+    length(plane1$b) == 1, length(plane2$b) == 1)
+  A_comb <- rbind(plane1$A, plane2$A)
+  b_comb <- rbind(plane1$b, plane2$b)
+
+  tryCatch({
+    solve(A_comb, b_comb)
+  }, error = function(e){
+    rep(NA, 2)
+  })
+}

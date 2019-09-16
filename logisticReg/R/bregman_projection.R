@@ -65,7 +65,7 @@
      .intersect_two_lines(plane$A, p$A, plane$b, p$b)
    })
 
-   idx <- which(apply(point_mat, 2, function(x){all(x > tol) & all(x < 1-tol)}))
+   idx <- which(apply(point_mat, 2, function(x){all(x >= tol/2) & all(x <= 1-tol/2)}))
    if(length(idx) != 2) list(f = f, grad_f = grad_f, prox = prox, x_current = rep(NA, 2))
 
    x_current <- point_mat[,idx[1]]
