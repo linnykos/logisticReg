@@ -3,7 +3,7 @@ set.seed(10)
 dat <- matrix(rnorm(6), ncol = 3, nrow = 2)
 dat <- apply(dat, 2, function(x){x/.l2norm(x)})
 
-lambda <- 0.5
+lambda <- 0.25
 
 seq_val <- seq(0, 1, length.out = 100)
 y_mat <- expand.grid(seq_val, seq_val)
