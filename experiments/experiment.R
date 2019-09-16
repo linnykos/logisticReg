@@ -5,81 +5,129 @@ dat <- apply(dat, 2, function(x){x/.l2norm(x)})
 
 lambda <- 0.25
 
-y <- c(0.05, 0.9)
-polytope = NA
+y <- c(0.85, 0.95)
 
-##############
+polytope <- .form_polytope(dat, lambda)
 
-stopifnot(all(dim(dat) == c(2,3)), length(y) == 2, all(y >= 0), all(y <= 1))
-
-if(all(is.na(polytope))){
-  polytope <- .form_polytope(dat, lambda)
-
-  # shift polytope
-  for(i in 1:length(polytope)){
-    tmp <- .plane(basis = polytope[[i]]$plane$basis,
-                  offset = polytope[[i]]$plane$offset + rep(0.5, 2))
-    attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
-    polytope[[i]]$plane <- tmp
-    polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
-    polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
-  }
-}
-
-# determine if the point is inside the polytope
-bool_vec <- sapply(1:length(polytope), function(i){
-  all(sign(polytope[[i]]$plane$A %*% rep(.5, 2) - polytope[[i]]$plane$b) ==
-        sign(polytope[[i]]$plane$A %*% y - polytope[[i]]$plane$b))
-})
-if(all(bool_vec)){
-  return(list(point = y, model = rep(NA, 3)))
-}
-
-# bregman project onto each of the faces of the polytope
-point_mat <- t(sapply(1:length(polytope), function(i){
-  res <- .projection_bregman(y, polytope[[i]]$plane, distr_class = "bernoulli")
-}))
-
-# compute the bregman divergence at each point, include the corners of polytope
+# shift polytope
 for(i in 1:length(polytope)){
-  point_mat <- rbind(point_mat, polytope[[i]]$intersection_1, polytope[[i]]$intersection_2)
+  tmp <- .plane(basis = polytope[[i]]$plane$basis,
+                offset = polytope[[i]]$plane$offset + rep(0.5, 2))
+  attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
+  polytope[[i]]$plane <- tmp
+  polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
+  polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
 }
-val <- apply(point_mat, 1, function(x){
-  .conjugate_bernoulli(x) - .conjugate_bernoulli(y) - (.conjugate_grad_bernoulli(y))%*%(x-y)
+
+plot(NA, xlim = c(0,1), ylim = c(0,1), asp = T)
+
+for(i in 1:length(polytope)){
+  zz = rnorm(1000)*10
+  val = sapply(1:length(zz), function(x){polytope[[i]]$plane$basis*zz[x]+polytope[[i]]$plane$offset})
+  lines(val[1,], val[2,], col = i, lwd = 2)
+}
+
+#intersection is plane 1 (left: -1,0,0) and plane 6 (right: 0,0,1), intersection point is (0.5723, 0.7586)
+#so we want to set b_idx = c(1,3) with s_vec = c(-1,1), and a_idx = 3
+######################
+
+distr_class = "bernoulli"
+
+y <- as.numeric(y)
+n <- nrow(dat); d <- ncol(dat)
+
+powerset <- .powerset(1:d)[-1] # determine b_idx
+b_idx <- powerset[[5]]
+
+len <- length(b_idx)
+powerset_inner <- .powerset(1:len) # determine s_vec OR a_idx
+k <- length(powerset_inner)
+
+i <- 3
+j <- 3
+
+s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
+a_idx <- b_idx[powerset_inner[[j]]]
+
+kbs <- .construct_kbs(dat, b_idx, s_vec, lambda)
+plane <- .plane(basis = kbs$basis, offset = y - kbs$offset)
+
+point <- .projection_bregman(rep(0.5,n), plane, distr_class = distr_class)
+point <- .conjugate_grad_bernoulli(point)
+mab <- .construct_mab(dat, a_idx = a_idx, b_idx = b_idx)
+
+nullspace <- .nullspace(mab)
+nullspace <- .plane(basis = nullspace)
+
+.distance_point_to_plane(point, nullspace)
+
+###################
+
+# we can hope to reverse this: what are all the points such that when you take the conjugate gradient,
+## it lands in the nullspace
+
+nullspace <- .nullspace(mab)
+nullspace <- .plane(basis = nullspace)
+
+tmp <- sort(rnorm(100000, sd = 100))
+points_in <- sapply(tmp, function(x){
+  zz <- nullspace$offset + x*nullspace$basis
+  exp(zz)/(1+exp(zz))
 })
 
-mat <- cbind(point_mat, val, 1:nrow(point_mat))
-colnames(mat) = c("x1", "x2", "val", "idx")
+plot(points_in[1,], points_in[2,], asp = T)
+lines(rep(plane$offset[2], 2), c(0,1), col = "red")
+lines(c(0,1), rep(plane$offset[1],2), col = "red")
 
-# determine which index is appropriate
-while(TRUE){
-  print(mat)
-  idx <- which.min(mat[,"val"])
+########################3
 
-  polytope_idx <- mat[idx, "idx"]
-  if(mat[idx, "idx"] > length(polytope)) break()
+rm(list = ls())
+set.seed(10)
+dat <- matrix(rnorm(6), ncol = 3, nrow = 2)
+dat <- apply(dat, 2, function(x){x/.l2norm(x)})
 
+lambda <- 0.25
 
-  vec <- mat[idx, 1:2]
-  if(sign(vec[1] - polytope[[polytope_idx]]$intersection_1[1]) != sign(vec[1] - polytope[[polytope_idx]]$intersection_2[1]) &
-     sign(vec[2] - polytope[[polytope_idx]]$intersection_1[2]) != sign(vec[2] - polytope[[polytope_idx]]$intersection_2[2])) break()
-  mat <- mat[-idx,]
-}
+seq_val <- seq(0, 1, length.out = 100)
+seq_val <- seq_val[-c(1, length(seq_val))]
+y_mat <- expand.grid(seq_val, seq_val)
 
-# collect the model_vec
-if(idx <= length(polytope)){
-  model_vec <- attr(polytope[[polytope_idx]]$plane, "model")
-} else {
-  plane_idx <- which(sapply(1:length(polytope), function(i){
-    sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_1)) == 0 | sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_2)) == 0
-  }))
-  stopifnot(length(plane_idx) == 2)
+dist_vec5 <- sapply(1:nrow(y_mat), function(i){
+  if(i %% floor(nrow(y_mat)/10) == 0) cat('*')
+  distr_class = "bernoulli"
 
-  model_vec <- rep(NA, 3)
-  for(i in 1:length(plane_idx)){
-    tmp <- attr(polytope[[plane_idx[i]]]$plane, "model")
-    model_vec[which(!is.na(tmp))] <- tmp[which(!is.na(tmp))]
+  y <- as.numeric(y_mat[i,])
+  n <- nrow(dat); d <- ncol(dat)
+
+  powerset <- .powerset(1:d)[-1] # determine b_idx
+  b_idx <- powerset[[5]]
+
+  len <- length(b_idx)
+  powerset_inner <- .powerset(1:len) # determine s_vec OR a_idx
+  k <- length(powerset_inner)
+
+  i <- 3
+  j <- 3
+
+  s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
+  a_idx <- b_idx[powerset_inner[[j]]]
+
+  kbs <- .construct_kbs(dat, b_idx, s_vec, lambda)
+  plane <- .plane(basis = kbs$basis, offset = y - kbs$offset)
+
+  point <- .projection_bregman(rep(0.5,n), plane, distr_class = distr_class)
+  if(all(is.na(point)) | any(point <= 0) | any(point >= 1)) {
+    return(NA)
   }
-}
+  point <- .conjugate_grad_bernoulli(point)
+  mab <- .construct_mab(dat, a_idx = a_idx, b_idx = b_idx)
 
+  nullspace <- .nullspace(mab)
+  nullspace <- .plane(basis = nullspace)
+
+  .distance_point_to_plane(point, nullspace)
+})
+
+bool_vec <- dist_vec5 <= 1e-1/3
+plot(y_mat[,1], y_mat[,2], pch = 16, col = c("gray85", "red")[bool_vec+1], asp = T)
 
