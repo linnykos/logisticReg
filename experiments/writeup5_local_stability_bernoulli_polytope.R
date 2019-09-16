@@ -24,12 +24,6 @@ for(i in 1:length(polytope)){
   polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
 }
 
-for(i in 1:length(polytope)){
-  zz = rnorm(1000)*10
-  val = sapply(1:length(zz), function(x){polytope[[i]]$plane$basis*zz[x]+polytope[[i]]$plane$offset})
-  lines(val[1,], val[2,], col = i, lwd = 2)
-}
-
 ########
 
 model_mat <- sapply(1:nrow(y_mat), function(i){
@@ -41,4 +35,14 @@ model_mat <- sapply(1:nrow(y_mat), function(i){
 sign_string <- apply(model_mat, 2, function(x){paste0(x, collapse = "_")})
 table(sign_string)
 sign_string <- as.numeric(as.factor(sign_string))
+png("../figures/writeup5_bernoulli_lambda025_modelselection.png", width = 1600, height = 1600, units = "px",
+    res = 300)
 plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
+graphics.off()
+
+# for(i in 1:length(polytope)){
+#   zz = rnorm(1000)*10
+#   val = sapply(1:length(zz), function(x){polytope[[i]]$plane$basis*zz[x]+polytope[[i]]$plane$offset})
+#   lines(val[1,], val[2,], col = i, lwd = 2)
+# }
+#

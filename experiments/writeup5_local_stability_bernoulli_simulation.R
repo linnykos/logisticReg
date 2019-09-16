@@ -16,7 +16,7 @@ dist_vec5 <- sapply(1:nrow(y_mat), function(i){
 # bool_vec <- (dist_vec5 <= 1e-1/5)
 bool_vec <- (dist_vec5 <= 1e-1/3)
 
-png("../figures/writeup5_bernoulli_lambda05.png", width = 1600, height = 1600, units = "px",
+png("../figures/writeup5_bernoulli_lambda025_localstability.png", width = 1600, height = 1600, units = "px",
     res = 300)
 plot(y_mat[,1], y_mat[,2], pch = 16, col = c("gray85", "red")[bool_vec+1], asp = T)
 graphics.off()

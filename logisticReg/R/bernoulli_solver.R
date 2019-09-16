@@ -43,9 +43,10 @@ bernoulli_solver <- function(dat, y, lambda, polytope = NA){
   # determine which index is appropriate
   while(TRUE){
     idx <- which.min(mat[,"val"])
-    if(mat[idx, "idx"] > length(polytope)) break()
 
     polytope_idx <- mat[idx, "idx"]
+    if(mat[idx, "idx"] > length(polytope)) break()
+
     vec <- mat[idx, 1:2]
     if(sign(vec[1] - polytope[[polytope_idx]]$intersection_1[1]) != sign(vec[1] - polytope[[polytope_idx]]$intersection_2[1]) &
        sign(vec[2] - polytope[[polytope_idx]]$intersection_1[2]) != sign(vec[2] - polytope[[polytope_idx]]$intersection_2[2])) break()
@@ -53,8 +54,8 @@ bernoulli_solver <- function(dat, y, lambda, polytope = NA){
   }
 
   # collect the model_vec
-  if(idx <= length(polytope)){
-    model_vec <- attr(polytope[[idx]]$plane, "model")
+  if(polytope_idx <= length(polytope)){
+    model_vec <- attr(polytope[[polytope_idx]]$plane, "model")
   } else {
     plane_idx <- which(sapply(1:length(polytope), function(i){
       sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_1)) == 0 | sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_2)) == 0

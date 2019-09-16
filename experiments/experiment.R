@@ -5,25 +5,26 @@ dat <- apply(dat, 2, function(x){x/.l2norm(x)})
 
 lambda <- 0.25
 
-seq_val <- seq(0, 1, length.out = 10)
-y_mat <- expand.grid(seq_val, seq_val)
+y <- c(0.05, 0.9)
+polytope = NA
 
-polytope <- .form_polytope(dat, lambda)
+##############
 
-# shift polytope
-for(i in 1:length(polytope)){
-  tmp <- .plane(basis = polytope[[i]]$plane$basis,
-                offset = polytope[[i]]$plane$offset + rep(0.5, 2))
-  attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
-  polytope[[i]]$plane <- tmp
-  polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
-  polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
+stopifnot(all(dim(dat) == c(2,3)), length(y) == 2, all(y >= 0), all(y <= 1))
+
+if(all(is.na(polytope))){
+  polytope <- .form_polytope(dat, lambda)
+
+  # shift polytope
+  for(i in 1:length(polytope)){
+    tmp <- .plane(basis = polytope[[i]]$plane$basis,
+                  offset = polytope[[i]]$plane$offset + rep(0.5, 2))
+    attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
+    polytope[[i]]$plane <- tmp
+    polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
+    polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
+  }
 }
-
-y <- c(0,0)
-
-# bernoulli_solver (dat, y, lambda, polytope = polytope)
-########################
 
 # determine if the point is inside the polytope
 bool_vec <- sapply(1:length(polytope), function(i){
@@ -34,76 +35,51 @@ if(all(bool_vec)){
   return(list(point = y, model = rep(NA, 3)))
 }
 
-# point_mat <- t(sapply(1:length(polytope), function(i){
-#   print(i)
-#   res <- .projection_bregman(y, polytope[[i]]$plane, distr_class = "bernoulli")
-# }))
+# bregman project onto each of the faces of the polytope
+point_mat <- t(sapply(1:length(polytope), function(i){
+  res <- .projection_bregman(y, polytope[[i]]$plane, distr_class = "bernoulli")
+}))
 
-# .projection_bregman(y, polytope[[1]]$plane, distr_class = "bernoulli")
-######################
-
-z <- y
-plane <- polytope[[1]]$plane
-distr_class = "bernoulli"
-max_iter = 100
-tol = 1e-3
-
-if(nrow(plane$A) == ncol(plane$A)) {
-  res <- as.numeric(plane$b)
-  attributes(res) <- list("iteration" = NA, "tolerance" = NA)
-  return(res)
+# compute the bregman divergence at each point, include the corners of polytope
+for(i in 1:length(polytope)){
+  point_mat <- rbind(point_mat, polytope[[i]]$intersection_1, polytope[[i]]$intersection_2)
 }
-res <- .setup_bregman_function(plane, distr_class)
+val <- apply(point_mat, 1, function(x){
+  .conjugate_bernoulli(x) - .conjugate_bernoulli(y) - (.conjugate_grad_bernoulli(y))%*%(x-y)
+})
 
-f <- res$f; grad_f <- res$grad_f; prox <- res$prox
-grad_f_z <- grad_f(z)
+mat <- cbind(point_mat, val, 1:nrow(point_mat))
+colnames(mat) = c("x1", "x2", "val", "idx")
 
-g <- function(x){f(x) - f(z) - t(grad_f_z) %*% (x-z)}
-grad_g <- function(x){grad_f(x) - grad_f_z}
-G_t <- function(x, eta){(x - prox(x - eta * (grad_f(x) - grad_f_z)))/eta}
+# determine which index is appropriate
+while(TRUE){
+  print(mat)
+  idx <- which.min(mat[,"val"])
 
-iter <- 1
-x_prev <- rep(Inf, length(z))
-x_current <- res$x_current
-if(all(is.na(x_current))) {
-  res <- as.numeric(x_current)
-  attributes(res) <- list("iteration" = NA, "tolerance" = NA)
-  return(res)
+  polytope_idx <- mat[idx, "idx"]
+  if(mat[idx, "idx"] > length(polytope)) break()
+
+
+  vec <- mat[idx, 1:2]
+  if(sign(vec[1] - polytope[[polytope_idx]]$intersection_1[1]) != sign(vec[1] - polytope[[polytope_idx]]$intersection_2[1]) &
+     sign(vec[2] - polytope[[polytope_idx]]$intersection_1[2]) != sign(vec[2] - polytope[[polytope_idx]]$intersection_2[2])) break()
+  mat <- mat[-idx,]
 }
 
-# while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
-#   x_prev <- x_current
-#
-#   eta <- .backtrack_line_search(x_current, g, grad_g, G_t)
-#   x_current <- prox(x_prev - eta * grad_g(x_prev))
-#
-#   iter <- iter + 1
-#   # print(x_current)
-# }
+# collect the model_vec
+if(idx <= length(polytope)){
+  model_vec <- attr(polytope[[polytope_idx]]$plane, "model")
+} else {
+  plane_idx <- which(sapply(1:length(polytope), function(i){
+    sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_1)) == 0 | sum(abs(mat[idx,1:2] - polytope[[i]]$intersection_2)) == 0
+  }))
+  stopifnot(length(plane_idx) == 2)
 
-x_prev <- x_current
+  model_vec <- rep(NA, 3)
+  for(i in 1:length(plane_idx)){
+    tmp <- attr(polytope[[plane_idx[i]]]$plane, "model")
+    model_vec[which(!is.na(tmp))] <- tmp[which(!is.na(tmp))]
+  }
+}
 
-# eta <- .backtrack_line_search(x_current, g, grad_g, G_t)
-######################
-x <- x_current
-beta = 0.5
-eta_init = 1
-tol = 1e-3
-
-eta <- eta_init
-gx <- g(x)
-grad_gx <- grad_g(x)
-Gtx <- G_t(x, eta)
-# counter <- 1
-
-# while(TRUE){
-#   val1 <- g(x - eta*Gtx)
-#   val2 <- gx - eta * t(grad_gx)%*%Gtx + eta*.l2norm(Gtx)^2/2
-#   if(val2 > val1) break()
-#   if(abs(eta) <= tol) {eta <- 0; break()}
-#   # print(paste0(counter, ": ", eta, " // ", val1, " vs. ", val2))
-#   eta <- eta*beta
-#
-#   counter <- counter + 1
-# }
 
