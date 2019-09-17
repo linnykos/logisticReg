@@ -3,38 +3,35 @@ bernoulli_solver <- function(dat, y, lambda, polytope = NA){
 
   if(all(is.na(polytope))){
     polytope <- .form_polytope(dat, lambda)
-
-    # shift polytope
-    for(i in 1:length(polytope)){
-      tmp <- .plane(basis = polytope[[i]]$plane$basis,
-                                    offset = polytope[[i]]$plane$offset + rep(0.5, 2))
-      attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
-      polytope[[i]]$plane <- tmp
-      polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
-      polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
-    }
   }
 
   # determine if the point is inside the polytope
   bool_vec <- sapply(1:length(polytope), function(i){
-    all(sign(polytope[[i]]$plane$A %*% rep(.5, 2) - polytope[[i]]$plane$b) ==
-          sign(polytope[[i]]$plane$A %*% y - polytope[[i]]$plane$b))
+    all(sign(polytope[[i]]$plane$A %*% rep(0, 2) - polytope[[i]]$plane$b) ==
+          sign(polytope[[i]]$plane$A %*% (y - rep(0.5,2)) - polytope[[i]]$plane$b))
   })
   if(all(bool_vec)){
     return(list(point = y, model = rep(NA, 3)))
   }
 
+  #compute -nalba G(0)
+  neg_grad_G <- y - rep(0.5, 2)
+
   # bregman project onto each of the faces of the polytope
   point_mat <- t(sapply(1:length(polytope), function(i){
-    res <- .projection_bregman(y, polytope[[i]]$plane, distr_class = "bernoulli")
+    res <- .projection_bregman(neg_grad_G, polytope[[i]]$plane, distr_class = "bernoulli",
+                               offset = y, invert = T)
   }))
 
   # compute the bregman divergence at each point, include the corners of polytope
   for(i in 1:length(polytope)){
     point_mat <- rbind(point_mat, polytope[[i]]$intersection_1, polytope[[i]]$intersection_2)
   }
+  func1 <- .conjugate_bernoulli_constructor(offset = y, invert = T)
+  func2 <- .conjugate_grad_bernoulli_constructor(offset = y, invert = T)
   val <- apply(point_mat, 1, function(x){
-    .conjugate_bernoulli(x) - .conjugate_bernoulli(y) - (.conjugate_grad_bernoulli(y))%*%(x-y)
+    if(all(is.na(x))) return(NA)
+    func1(x) - func1(neg_grad_G) - func2(neg_grad_G)%*%(x-neg_grad_G)
   })
 
   mat <- cbind(point_mat, val, 1:nrow(point_mat))

@@ -14,16 +14,6 @@ y_mat <- expand.grid(seq_val, seq_val)
 
 polytope <- .form_polytope(dat, lambda)
 
-# shift polytope
-for(i in 1:length(polytope)){
-  tmp <- .plane(basis = polytope[[i]]$plane$basis,
-                offset = polytope[[i]]$plane$offset + rep(0.5, 2))
-  attr(tmp, "model") <- attr(polytope[[i]]$plane, "model")
-  polytope[[i]]$plane <- tmp
-  polytope[[i]]$intersection_1 <- polytope[[i]]$intersection_1 + rep(0.5, 2)
-  polytope[[i]]$intersection_2 <- polytope[[i]]$intersection_2 + rep(0.5, 2)
-}
-
 ########
 
 model_mat <- sapply(1:nrow(y_mat), function(i){
@@ -32,12 +22,12 @@ model_mat <- sapply(1:nrow(y_mat), function(i){
   res$model
 })
 
-save.image("../experiments/writeup5_bernoulli_polytope.RData")
+save.image("../experiments/writeup5_bernoulli_polytope2.RData")
 
 sign_string <- apply(model_mat, 2, function(x){paste0(x, collapse = "_")})
 table(sign_string)
 sign_string <- as.numeric(as.factor(sign_string))
-png("../figures/writeup5_bernoulli_lambda025_modelselection.png", width = 1600, height = 1600, units = "px",
+png("../figures/writeup5_bernoulli_lambda025_modelselection2.png", width = 1600, height = 1600, units = "px",
     res = 300)
 plot(y_mat[,1], y_mat[,2], pch = 16, col = sign_string, asp = T)
 graphics.off()
