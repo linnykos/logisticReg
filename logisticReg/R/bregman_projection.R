@@ -71,7 +71,7 @@
    idx <- which(apply(point_mat, 2, function(x){all(x >= domain_mat[,1]) & all(x <= domain_mat[,2])}))
    if(length(idx) != 2) list(f = f, grad_f = grad_f, prox = prox, x_current = rep(NA, 2))
 
-   x_current <- point_mat[,idx[1]]
+   x_current <- rowMeans(point_mat[,idx])
 
   } else if(distr_class == "gaussian"){
     f <- .conjugate_gaussian_constructor(); grad_f <- .conjugate_grad_gaussian_constructor()
@@ -97,10 +97,10 @@
   eta <- eta_init
   gx <- g(x)
   grad_gx <- grad_g(x)
-  Gtx <- G_t(x, eta)
   counter <- 1
 
   while(TRUE){
+    Gtx <- G_t(x, eta)
     val1 <- g(x - eta*Gtx)
     val2 <- gx - eta * t(grad_gx)%*%Gtx + eta*.l2norm(Gtx)^2/2
     if(val2 > val1) break()
