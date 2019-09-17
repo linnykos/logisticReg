@@ -29,6 +29,10 @@ for(i in 1:length(polytope)){
 
 #intersection is plane 1 (left: -1,0,0) and plane 6 (right: 0,0,1), intersection point is (0.5723, 0.7586)
 #so we want to set b_idx = c(1,3) with s_vec = c(-1,1), and a_idx = 3
+
+#let's look at an easier point to see if i understand wtf is going on
+#intersection is plane 2 (left: 1,0,0) and plane 3 (right: 0,-1,0), intersection point is (0.8663, 0.2859)
+#so we want to set b_idx = c(1,2) with s_vec = c(1,-1), and a_idx = 1
 ######################
 
 distr_class = "bernoulli"
@@ -100,14 +104,14 @@ dist_vec5 <- sapply(1:nrow(y_mat), function(i){
   n <- nrow(dat); d <- ncol(dat)
 
   powerset <- .powerset(1:d)[-1] # determine b_idx
-  b_idx <- powerset[[5]]
+  b_idx <- powerset[[3]]
 
   len <- length(b_idx)
   powerset_inner <- .powerset(1:len) # determine s_vec OR a_idx
   k <- length(powerset_inner)
 
-  i <- 3
-  j <- 3
+  i <- 2
+  j <- 2
 
   s_vec <- rep(-1, len); s_vec[powerset_inner[[i]]] <- 1
   a_idx <- b_idx[powerset_inner[[j]]]
