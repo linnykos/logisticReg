@@ -3,7 +3,7 @@
 .conjugate_bernoulli_constructor <- function(offset = rep(0, 2), invert = F, tol = 1e-4){
   func <- function(x){
     if(invert) xprime <- -x else xprime <- x
-    if(any(xprime + offset < 0) | any(xprime + offset >= 1-tol)) return(Inf)
+    if(any(xprime + offset < tol/2) | any(xprime + offset >= 1-tol/2)) return(Inf)
 
     xprime <- xprime + offset
 
@@ -29,7 +29,7 @@
 .conjugate_grad_bernoulli_constructor <- function(offset = rep(0, 2), invert = F, tol = 1e-4){
   func <- function(x){
     if(invert) xprime <- -x else xprime <- x
-    stopifnot(all(xprime + offset >= 0), all(xprime + offset <= 1-tol))
+    stopifnot(all(xprime + offset >= tol/2), all(xprime + offset <= 1-tol/2))
 
     xprime <- xprime + offset
 

@@ -5,7 +5,7 @@ dat <- apply(dat, 2, function(x){x/.l2norm(x)})
 
 lambda <- 0.25
 
-y <- c(0.85, 0.95)
+y <- c(0.5, 0.76)
 
 ###########################
 polytope <- .form_polytope(dat, lambda)
