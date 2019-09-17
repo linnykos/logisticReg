@@ -10,48 +10,48 @@
 }
 
 # apply a bregman projection onto a plane
-.projection_bregman <- function(z, plane, distr_class = "bernoulli", offset = rep(0,2), invert = F,  max_iter = 100, tol = 1e-3){
+# can only work if the plane is a line or a point
+.projection_bregman <- function(z, plane, distr_class = "bernoulli", offset = rep(0,2), invert = F,
+                                intersection_1 = NA, intersection_2 = NA, max_iter = 100, tol = 1e-3,
+                                grid_size = 1000){
+  stopifnot(ncol(plane$A) == 2, nrow(plane$A) %in% c(1,2))
   if(nrow(plane$A) == ncol(plane$A)) {
     res <- as.numeric(plane$b)
     attributes(res) <- list("iteration" = NA, "tolerance" = NA)
     return(res)
   }
   res <- .setup_bregman_function(plane, distr_class, offset = offset, invert = invert)
-  x_current <- res$x_current
-  if(all(is.na(x_current))) {
-    res <- as.numeric(x_current)
-    attributes(res) <- list("iteration" = NA, "tolerance" = NA)
-    return(res)
+  point_mat <- res$point_mat
+  f <- res$f; grad_f <- res$grad_f
+
+  # check intersection points are on the plane
+  if(!all(is.na(intersection_1)) | !all(is.na(intersection_2))){
+    stopifnot(sum(abs(plane$A %*% intersection_1 - plane$b)) <= tol,
+              sum(abs(plane$A %*% intersection_2 - plane$b)) <= tol)
   }
 
-  f <- res$f; grad_f <- res$grad_f; prox <- res$prox
-  grad_f_z <- grad_f(z)
-
-  g <- function(x){f(x) - f(z) - t(grad_f_z) %*% (x-z)}
-  grad_g <- function(x){grad_f(x) - grad_f_z}
-  G_t <- function(x, eta){(x - prox(x - eta * (grad_f(x) - grad_f_z)))/eta}
-
-  iter <- 1
-  x_prev <- rep(Inf, length(z))
-
-  while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
-    x_prev <- x_current
-
-    eta <- .backtrack_line_search(x_current, g, grad_g, G_t)
-    x_current <- prox(x_prev - eta * grad_g(x_prev))
-
-    iter <- iter + 1
-    # print(x_current)
+  # construct the grid
+  if(all(is.na(intersection_1)) & all(is.na(intersection_2))){
+    x_seq <- seq(0, 1, length.out = 1000)
+    grid <- sapply(x_seq, function(x){point_mat[,1] + x * apply(point_mat, 1, diff)})
+  } else {
+    x_seq <- seq(0, 1, length.out = 1000)
+    diff_vec <- c(intersection_2[1]-intersection_1[1], intersection_2[2]-intersection_1[2])
+    grid <- sapply(x_seq, function(x){intersection_1 + x * diff_vec})
   }
 
-  res <- as.numeric(x_current)
-  attributes(res) <- list("iteration" = iter, "tolerance" = .l2norm(x_prev - x_current))
-  res
+  func1 <- .conjugate_bernoulli_constructor(offset = y, invert = T)
+  func2 <- .conjugate_grad_bernoulli_constructor(offset = y, invert = T)
+  val <- apply(grid, 2, function(x){
+    if(all(is.na(x))) return(NA)
+    func1(x) - func1(neg_grad_G) - func2(neg_grad_G)%*%(x-neg_grad_G)
+  })
+
+  as.numeric(grid[,which.min(val)])
 }
 
 .setup_bregman_function <- function(plane, distr_class, offset = rep(0,2), invert = F, tol = 1e-3){
   proj_mat <- .projection_matrix(plane$basis)
-  prox <- function(x){(proj_mat %*% (x - plane$offset)) + plane$offset}
 
   if(distr_class == "bernoulli"){
     # can only handle the case where the plane is 1d in a 2d space
@@ -69,19 +69,18 @@
    })
 
    idx <- which(apply(point_mat, 2, function(x){all(x >= domain_mat[,1]) & all(x <= domain_mat[,2])}))
-   if(length(idx) != 2) list(f = f, grad_f = grad_f, prox = prox, x_current = rep(NA, 2))
-
-   x_current <- rowMeans(point_mat[,idx])
+   point_mat <- point_mat[,idx]
 
   } else if(distr_class == "gaussian"){
     f <- .conjugate_gaussian_constructor(); grad_f <- .conjugate_grad_gaussian_constructor()
     x_current <- plane$offset + plane$basis %*% rep(1, ncol(plane$basis))
+    point_mat <- matrix(c(-Inf, -Inf, Inf, Inf), ncol = 2)
 
   } else {
     stop("distr_class not properly specified")
   }
 
-  list(f = f, grad_f = grad_f, prox = prox, x_current = x_current)
+  list(f = f, grad_f = grad_f, point_mat = point_mat)
 }
 
 # intersect two lines of form A1%*%y=b1 and A2%*%y=b2

@@ -30,6 +30,8 @@ offset = y
 invert = T
 max_iter = 100
 tol = 1e-3
+intersection_1 <- polytope[[i]]$intersection_1
+intersection_2 <- polytope[[i]]$intersection_2
 
 if(nrow(plane$A) == ncol(plane$A)) {
   res <- as.numeric(plane$b)

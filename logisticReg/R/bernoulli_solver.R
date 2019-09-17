@@ -19,13 +19,16 @@ bernoulli_solver <- function(dat, y, lambda, polytope = NA){
 
   # bregman project onto each of the faces of the polytope
   point_mat <- t(sapply(1:length(polytope), function(i){
-    res <- .projection_bregman(neg_grad_G, polytope[[i]]$plane, distr_class = "bernoulli",
-                               offset = y, invert = T)
+    .projection_bregman(neg_grad_G, polytope[[i]]$plane, distr_class = "bernoulli",
+                        offset = y, invert = T,
+                        intersection_1 = polytope[[i]]$intersection_1,
+                        intersection_2 = polytope[[i]]$intersection_2)
   }))
 
   # compute the bregman divergence at each point, include the corners of polytope
+  # put the intersection points above first, so the "which.min" function below hits them first
   for(i in 1:length(polytope)){
-    point_mat <- rbind(point_mat, polytope[[i]]$intersection_1, polytope[[i]]$intersection_2)
+    point_mat <- rbind(polytope[[i]]$intersection_1, polytope[[i]]$intersection_2, point_mat)
   }
   func1 <- .conjugate_bernoulli_constructor(offset = y, invert = T)
   func2 <- .conjugate_grad_bernoulli_constructor(offset = y, invert = T)
@@ -34,21 +37,12 @@ bernoulli_solver <- function(dat, y, lambda, polytope = NA){
     func1(x) - func1(neg_grad_G) - func2(neg_grad_G)%*%(x-neg_grad_G)
   })
 
-  mat <- cbind(point_mat, val, 1:nrow(point_mat))
+  mat <- cbind(point_mat, val, c((length(polytope)+1):nrow(point_mat), 1:length(polytope)))
   colnames(mat) = c("x1", "x2", "val", "idx")
 
   # determine which index is appropriate
-  while(TRUE){
-    idx <- which.min(mat[,"val"])
-
-    polytope_idx <- mat[idx, "idx"]
-    if(mat[idx, "idx"] > length(polytope)) break()
-
-    vec <- mat[idx, 1:2]
-    if(sign(vec[1] - polytope[[polytope_idx]]$intersection_1[1]) != sign(vec[1] - polytope[[polytope_idx]]$intersection_2[1]) &
-       sign(vec[2] - polytope[[polytope_idx]]$intersection_1[2]) != sign(vec[2] - polytope[[polytope_idx]]$intersection_2[2])) break()
-    mat <- mat[-idx,]
-  }
+  idx <- which.min(mat[,"val"])
+  polytope_idx <- mat[idx, "idx"]
 
   # collect the model_vec
   if(polytope_idx <= length(polytope)){
