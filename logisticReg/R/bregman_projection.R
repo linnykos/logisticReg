@@ -10,13 +10,20 @@
 }
 
 # apply a bregman projection onto a plane
-.projection_bregman <- function(z, plane, distr_class = "bernoulli", max_iter = 100, tol = 1e-3){
+.projection_bregman <- function(z, plane, distr_class = "bernoulli", offset = rep(0,2), invert = F,  max_iter = 100, tol = 1e-3){
   if(nrow(plane$A) == ncol(plane$A)) {
     res <- as.numeric(plane$b)
     attributes(res) <- list("iteration" = NA, "tolerance" = NA)
     return(res)
   }
-  res <- .setup_bregman_function(plane, distr_class)
+  res <- .setup_bregman_function(plane, distr_class, offset = offset, invert = invert)
+  x_current <- res$x_current
+  if(all(is.na(x_current))) {
+    res <- as.numeric(x_current)
+    attributes(res) <- list("iteration" = NA, "tolerance" = NA)
+    return(res)
+  }
+
   f <- res$f; grad_f <- res$grad_f; prox <- res$prox
   grad_f_z <- grad_f(z)
 
@@ -26,12 +33,6 @@
 
   iter <- 1
   x_prev <- rep(Inf, length(z))
-  x_current <- res$x_current
-  if(all(is.na(x_current))) {
-    res <- as.numeric(x_current)
-    attributes(res) <- list("iteration" = NA, "tolerance" = NA)
-    return(res)
-  }
 
   while(iter < max_iter & (is.na(tol) || .l2norm(x_prev - x_current) > tol)){
     x_prev <- x_current
@@ -48,30 +49,32 @@
   res
 }
 
-.setup_bregman_function <- function(plane, distr_class, tol = 1e-3){
+.setup_bregman_function <- function(plane, distr_class, offset = rep(0,2), invert = F, tol = 1e-3){
   proj_mat <- .projection_matrix(plane$basis)
   prox <- function(x){(proj_mat %*% (x - plane$offset)) + plane$offset}
-
 
   if(distr_class == "bernoulli"){
     # can only handle the case where the plane is 1d in a 2d space
     stopifnot(all(dim(plane$basis) == c(2,1)))
-    f <- .conjugate_bernoulli; grad_f <- .conjugate_grad_bernoulli
-    plane_list <- list(.plane(basis = matrix(c(0,1), 2, 1), offset = c(tol, tol)),
-                                            .plane(basis = matrix(c(1,0), 2, 1), offset = c(tol, tol)),
-                                            .plane(basis = matrix(c(0,1), 2, 1), offset = c(1-tol, tol)),
-                                            .plane(basis = matrix(c(1,0), 2, 1), offset = c(tol, 1-tol)))
+    f <- .conjugate_bernoulli_constructor(offset = offset, invert = invert)
+    grad_f <- .conjugate_grad_bernoulli_constructor(offset = offset, invert = invert) #NOTE: y-1/2 (equal to offset-1/2 here) should be a valid input
+    domain_mat <- attr(grad_f, "domain")
+
+    plane_list <- list(.plane(basis = matrix(c(0,1), 2, 1), offset = c(domain_mat[1,1], domain_mat[2,1])),
+                                            .plane(basis = matrix(c(1,0), 2, 1), offset = c(domain_mat[1,1], domain_mat[2,1])),
+                                            .plane(basis = matrix(c(0,1), 2, 1), offset = c(domain_mat[1,2], domain_mat[2,2])),
+                                            .plane(basis = matrix(c(1,0), 2, 1), offset = c(domain_mat[1,2], domain_mat[2,2])))
    point_mat <- sapply(plane_list, function(p){
      .intersect_two_lines(plane$A, p$A, plane$b, p$b)
    })
 
-   idx <- which(apply(point_mat, 2, function(x){all(x >= tol/2) & all(x <= 1-tol/2)}))
+   idx <- which(apply(point_mat, 2, function(x){all(x >= domain_mat[,1]) & all(x <= domain_mat[,2])}))
    if(length(idx) != 2) list(f = f, grad_f = grad_f, prox = prox, x_current = rep(NA, 2))
 
    x_current <- point_mat[,idx[1]]
 
   } else if(distr_class == "gaussian"){
-    f <- .conjugate_gaussian; grad_f <- .conjugate_grad_gaussian
+    f <- .conjugate_gaussian_constructor(); grad_f <- .conjugate_grad_gaussian_constructor()
     x_current <- plane$offset + plane$basis %*% rep(1, ncol(plane$basis))
 
   } else {

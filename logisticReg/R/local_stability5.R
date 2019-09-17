@@ -26,14 +26,14 @@
         plane <- .plane(basis = kbs$basis, offset = y - kbs$offset)
         if(distr_class == "gaussian") {
           point <- .projection_euclidean(rep(0,n), plane)
-          point <- .conjugate_grad_gaussian(point)
+          point <- .conjugate_grad_gaussian_constructor()(point)
 
         } else if(distr_class == "bernoulli") {
           point <- .projection_bregman(rep(0.5,n), plane, distr_class = distr_class)
           if(all(is.na(point)) | any(point <= 0) | any(point >= 1)) {
             dist_vec[(i-1)*k+j] <- NA; next()
           }
-          point <- .conjugate_grad_bernoulli(point)
+          point <- .conjugate_grad_bernoulli_constructor()(point)
 
         } else {
           stop("distr_class not properly specified")
